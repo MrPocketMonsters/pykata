@@ -1,0 +1,60 @@
+services:
+  localstack:
+    image: localstack/localstack:latest
+    container_name: pykata-localstack
+    ports:
+      - "4566:4566" # LocalStack Gateway
+    healthcheck: # Healthcheck to ensure LocalStack is ready
+      test: |
+        python - <<'PY'
+        import json
+        import sys
+        import urllib.request as u
+
+        try:
+            data = json.load(u.urlopen('http://localhost:4566/_localstack/health'))
+            services = data.get('services', {})
+            ok = (
+                services.get('s3') in ('running', 'available') and
+                services.get('dynamodb') == 'available' and
+                services.get('lambda') == 'available' and
+                services.get('apigateway') == 'available'
+            )
+            sys.exit(0 if ok else 1)
+        except Exception:
+            sys.exit(1)
+        PY
+      interval: 5s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    environment:
+      - SERVICES=${LOCALSTACK_SERVICES:-s3,dynamodb,lambda,apigateway}
+      - DEBUG=${LOCALSTACK_DEBUG:-1}
+      - LAMBDA_EXECUTOR=${LOCALSTACK_LAMBDA_EXECUTOR:-docker}
+      - DEFAULT_REGION=${LOCALSTACK_DEFAULT_REGION:-us-east-1}
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"  # to enable lambda docker executor
+    networks:
+      - pykata-network
+
+  dynamodb-admin:
+    image: aaronshaf/dynamodb-admin:latest
+    container_name: pykata-dynamodb-admin
+    ports:
+      - "8001:8001"
+    environment:
+      - DYNAMO_ENDPOINT=http://localstack:4566
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-test}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-test}
+    depends_on:
+      localstack:
+        condition: service_healthy
+    networks:
+      - pykata-network
+
+networks:
+  pykata-network:
+    driver: bridge
