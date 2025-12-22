@@ -74,7 +74,7 @@ docker compose -f docker/docker-compose.yml up -d
 ```
 
 - Wait until containers are healthy (check with `docker ps`)
-- If you see port conflicts, stop other services using 4566/4571 ports
+- If you see port conflicts, stop other services using the 4566 port
 
 ## 6) (Optional) Verify LocalStack is reachable
 
@@ -131,7 +131,7 @@ pytest --cov=src --cov-report=term-missing
 It this step, you will find solutions to common issues that may arise during setup and development.
 
 - **Virtualenv not activating**: ensure you are running the correct shell command for your terminal.
-- **Ports already in use (4566/4571)**: stop conflicting containers or processes, then re-run docker compose.
+- **Ports already in use (4566/8001)**: stop conflicting containers or processes, then re-run docker compose.
 - **Terraform fails to reach LocalStack**: confirm Docker is running; retry `terraform apply` after LocalStack is healthy.
 - **AWS CLI missing**: install from <https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html> or skip step 6.
 - **Tests cannot find AWS endpoints**: check `.env` has `AWS_ENDPOINT_URL=http://localhost:4566` and app reload picks it up.
