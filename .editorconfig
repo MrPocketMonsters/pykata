@@ -1,0 +1,50 @@
+# EditorConfig helps maintain consistent coding styles across editors/IDEs
+# https://editorconfig.org
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+# Python
+[*.py]
+indent_size = 4
+max_line_length = 88
+
+# Shell
+[*.sh]
+# ...
+
+# Windows batch
+[*.bat]
+end_of_line = crlf
+
+# Terraform (HCL)
+[*.tf]
+# ...
+
+# YAML
+[*.{yml,yaml}]
+# ...
+
+# JSON
+[*.json]
+# ...
+
+# JavaScript / TypeScript
+[*.{js,jsx,ts,tsx}]
+# ...
+
+# Markdown
+[*.md]
+trim_trailing_whitespace = false
+max_line_length = off
+
+# Makefile uses tabs
+[Makefile]
+indent_size = 4
+indent_style = tab
