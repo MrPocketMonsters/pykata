@@ -1,5 +1,5 @@
-# See https://pre-commit.com for usage and config
-# Install: pip install -r requirements-dev.txt && pre-commit install
+# See https://pre-commit.com for modifying and config
+# Check LOCAL_SETUP.md for usage instructions
 
 ci:
   autoupdate_schedule: quarterly
