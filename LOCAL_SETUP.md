@@ -74,7 +74,7 @@ docker compose -f docker/docker-compose.yml up -d
 ```
 
 - Wait until containers are healthy (check with `docker ps`)
-- If you see port conflicts, stop other services using 4566 ports
+- If you see port conflicts, stop other services using the 4566 port
 
 ## 6) (Optional) Verify LocalStack is reachable
 
