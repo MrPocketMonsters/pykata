@@ -41,6 +41,8 @@ By the end of this exercise, the repository will contain:
 - Infrastructure-as-code (Terraform) for both local (LocalStack) and cloud (AWS) deployments.
 - A working example of short-lived feature branches, PR-based validation, and automated deployment on merge to main.
 
+**Current Status:** Foundation phase complete (pre-commit, CI, LocalStack). Backend and infrastructure implementation in progress.
+
 ## 🛠️ Tech Stack
 
 - Language: Python 3.12, TypeScript (frontend)
@@ -153,24 +155,87 @@ The pipelines will be implemented as follows:
 
 ## ✅ Getting Started
 
-**Sprint 1 (Weeks 1-2):** Foundation and backend
+### Sprint 1 (Weeks 1-2): Foundation & Backend
 
-1. Setup repository structure, pre-commit hooks, and GitHub Actions CI pipeline
-2. Configure LocalStack and Docker Compose for local development
-3. Build the FastAPI backend with kata listing, detail, and execution endpoints
-4. Implement the execution service with sandbox constraints
-5. Write unit and integration tests (target 70%+ coverage)
-6. Provision minimal dev infrastructure and deploy the backend (health + `GET /katas`) using Terraform
+#### Phase 1: Project Foundation
 
-**Sprint 2 (Weeks 3-4):** Frontend and deployment
+- Repository structure, pre-commit hooks, and quality tools configured
+- CI pipeline established with GitHub Actions (linting, type-checking, testing, coverage)
+- LocalStack + Docker Compose for local development environment
 
-1. Set up React/Vite frontend scaffold
-2. Build kata list and detail views
-3. Implement the code viewer and execution form
-4. Configure Terraform modules for Lambda, API Gateway, DynamoDB, and S3
-5. Build CD pipeline: automate backend and frontend deployment on merge to main
+#### Phase 2: Infrastructure as Code
 
-See the backlog for detailed issue breakdown and progress tracking.
+- Terraform modules for DynamoDB (kata metadata), S3 (kata code), and IAM roles
+- Local dev environment configuration pointing to LocalStack
+- Infrastructure initialization scripts
+
+#### Phase 3: Backend Development
+
+- Pydantic models for kata metadata and execution results
+- Service layers: DynamoDB client, S3 client, secure code execution sandbox
+- FastAPI endpoints: `/health`, `/katas`, `/katas/{id}`, `POST /katas/{id}/run`
+- Request logging and error handling middleware
+
+#### Phase 4: Testing & Quality Gates
+
+- Unit tests with pytest and coverage tracking (target ≥70%)
+- Sample kata data for validation
+- Execution service tests with timeout and sandbox constraints
+
+#### Phase 5: CI/CD Deployment
+
+- Lambda handler packaging with dependencies
+- Deployment workflow for dev environment
+- Artifact management and versioning
+
+### Sprint 2 (Weeks 3-4): Frontend & Production
+
+#### Phase 1: Frontend Development
+
+- React + Vite scaffold with component architecture
+- Kata list, detail, and code viewer components
+- Execution form with real-time result display
+
+#### Phase 2: Advanced Infrastructure
+
+- Lambda integration with API Gateway
+- Production-ready Terraform modules (API Gateway, CloudWatch, CloudFront)
+- Multi-environment setup (dev with LocalStack, prod with AWS)
+
+#### Phase 3: Integration & Observability
+
+- End-to-end integration tests
+- CloudWatch monitoring and alarms
+- Performance and security testing
+
+#### Phase 4: Production Hardening
+
+- CORS, rate limiting, and input validation
+- Security policies and documentation
+- S3 static frontend deployment
+
+#### Phase 5: Release & Documentation
+
+- API documentation with cURL examples
+- Deployment runbooks and troubleshooting guides
+- Release notes and version tagging
+
+## 📊 Sprint 1 Progress
+
+| Task | Story Points | Status | Notes |
+| --- | --- | --- | --- |
+| 1.1 - Repository Setup | 5 | ✅ Complete | pre-commit, pyproject.toml, requirements configured |
+| 1.2 - LocalStack & Docker | 3 | ✅ Complete | docker-compose with LocalStack + DynamoDB Admin |
+| 1.3 - GitHub Actions CI | 5 | ✅ Complete | CI workflow, badges, Codecov integration |
+| 1.4 - Terraform Infrastructure | 8 | 🔄 In Progress | DynamoDB & S3 modules needed |
+| 1.5 - Models & Services | 8 | 🚫 Blocked | Depends on Terraform (1.4) |
+| 1.6 - FastAPI Endpoints | 8 | 🚫 Blocked | Depends on Models & Services (1.5) |
+| 1.7 - Seed Data | 3 | 🚫 Blocked | Depends on FastAPI & Terraform (1.4, 1.6) |
+| 1.8 - Tests (70% coverage) | 8 | 🔄 In Progress | Basic test structure, targeting 70%+ coverage |
+| 1.9 - CI/CD Deployment | 5 | 🚫 Blocked | Depends on FastAPI endpoints (1.6) |
+| 1.10 - Documentation | 3 | 🔄 In Progress | API docs, LOCAL_SETUP, troubleshooting |
+
+**Sprint 1 Completion:** 30% (3 of 10 tasks complete | 3 in progress | 4 blocked)
 
 ## 🏆 Milestones
 
