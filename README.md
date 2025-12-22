@@ -2,6 +2,9 @@
 
 **[Specialization] DevOps External course LatAm November 2025**
 
+[![CI](https://github.com/MrPocketMonsters/pykata/actions/workflows/ci.yaml/badge.svg)](https://github.com/MrPocketMonsters/pykata/actions/workflows/ci.yaml/badge.svg)
+[![codecov](https://codecov.io/gh/MrPocketMonsters/pykata/branch/master/graph/badge.svg)](https://codecov.io/gh/MrPocketMonsters/pykata)
+
 A deliberately small but complete exercise to showcase CI/CD craftsmanship around a serverless-friendly Python application. The domain is intentionally simple: an expository catalog of coding katas, each shipped with a single Python solution file. Anonymous users can browse the kata list, read the code, and execute it by providing custom input. The true goal is to demonstrate disciplined pipelines, infrastructure-as-code, and short-lived feature branch workflows.
 
 ## 🧭 Table of Contents
