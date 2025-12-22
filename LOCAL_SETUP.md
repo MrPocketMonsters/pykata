@@ -56,14 +56,42 @@ pip install -r requirements-dev.txt
 pre-commit install
 ```
 
-## 4) Create your .env from the template
+## 4) Create your .env from the template and load it
 
-After this step, you will have a `.env` file with default environment variables for local development.
+After this step, you will have a `.env` file with default environment variables for local development and a loaded environment for the current shell session.
 
-```bash
-cp .env.example .env
-# Edit .env only if you need non-default endpoints/ports
-```
+- Create `.env` from template:
+
+    ```bash
+    cp .env.example .env
+    # Edit .env only if you need non-default endpoints/ports
+    ```
+
+- Load `.env` variables into the shell with subprocess support:
+
+    WSL/Git Bash:
+
+    ```bash
+    set -a
+    source .env
+    set +a
+    ```
+
+    CMD:
+
+    ```cmd
+    for /f "usebackq tokens=1,* delims== eol=#" %i in (".env") do @set "%i=%j"
+    ```
+
+    PowerShell:
+
+    ```powershell
+    Get-Content .env | ForEach-Object {
+        if ($_ -match '^\s*([^#\s][^=]+)=(.*)$') {
+        [Environment]::SetEnvironmentVariable($matches[1].Trim(), $matches[2].Trim())
+        }
+    }
+    ```
 
 ## 5) Start LocalStack (Docker Compose)
 

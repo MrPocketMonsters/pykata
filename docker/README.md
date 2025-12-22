@@ -10,8 +10,9 @@ This directory contains the Docker Compose setup for local development and testi
 ## Usage
 
 1. Ensure you have Docker and Docker Compose installed on your machine (both contained in Docker Desktop).
-2. Navigate to this directory in your terminal.
-3. Run the following command to start the services:
+2. Load environment variables from the `.env` file in the project root (see `LOCAL_SETUP.md` for instructions).
+3. Navigate to this directory in your terminal.
+4. Run the following command to start the services:
 
    ```bash
    docker-compose up -d
@@ -23,7 +24,7 @@ This directory contains the Docker Compose setup for local development and testi
     docker-compose -f docker/docker-compose.yml up -d
     ```
 
-4. Access DynamoDBAdmin at `http://localhost:8001` to manage your DynamoDB tables.
+5. Access DynamoDBAdmin at `http://localhost:8001` to manage your DynamoDB tables.
 
 ## Throubleshooting
 
