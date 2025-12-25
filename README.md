@@ -128,6 +128,32 @@ Once set up, the local development workflow will be:
   # Edit .env if needed (defaults work for local development)
   ```
 
+- Load environment variables:
+
+  WSL/Git Bash:
+
+  ```bash
+  set -a
+  source .env
+  set +a
+  ```
+
+  CMD:
+
+  ```cmd
+  for /f "usebackq tokens=1,* delims== eol=#" %i in (".env") do @set "%i=%j"
+  ```
+
+  PowerShell:
+
+  ```powershell
+  Get-Content .env | ForEach-Object {
+    if ($_ -match '^\s*([^#\s][^=]+)=(.*)$') {
+      [Environment]::SetEnvironmentVariable($matches[1].Trim(), $matches[2].Trim())
+    }
+  }
+  ```
+
 - Start LocalStack and services via Docker Compose:
 
   ```bash
