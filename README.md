@@ -253,15 +253,15 @@ The pipelines will be implemented as follows:
 | 1.1 - Repository Setup | 5 | ✅ Complete | pre-commit, pyproject.toml, requirements configured |
 | 1.2 - LocalStack & Docker | 3 | ✅ Complete | docker-compose with LocalStack + DynamoDB Admin |
 | 1.3 - GitHub Actions CI | 5 | ✅ Complete | CI workflow, badges, Codecov integration |
-| 1.4 - Terraform Infrastructure | 8 | 🔄 In Progress | DynamoDB & S3 modules needed |
-| 1.5 - Models & Services | 8 | 🚫 Blocked | Depends on Terraform (1.4) |
-| 1.6 - FastAPI Endpoints | 8 | 🚫 Blocked | Depends on Models & Services (1.5) |
+| 1.4 - Terraform Infrastructure | 8 | ✅ Complete | DynamoDB & S3 modules completed |
+| 1.5 - Models & Services | 8 | 🔄 In Progress | Pydantic models and service layers in development |
+| 1.6 - FastAPI Endpoints | 8 | ⬜ To Do | Ready to start |
 | 1.7 - Seed Data | 3 | 🚫 Blocked | Depends on FastAPI & Terraform (1.4, 1.6) |
 | 1.8 - Tests (70% coverage) | 8 | 🔄 In Progress | Basic test structure, targeting 70%+ coverage |
 | 1.9 - CI/CD Deployment | 5 | 🚫 Blocked | Depends on FastAPI endpoints (1.6) |
 | 1.10 - Documentation | 3 | 🔄 In Progress | API docs, LOCAL_SETUP, troubleshooting |
 
-**Sprint 1 Completion:** 30% (3 of 10 tasks complete | 3 in progress | 4 blocked)
+**Sprint 1 Completion:** 40% (4 of 10 tasks complete | 3 in progress | 3 blocked)
 
 ## 🏆 Milestones
 
