@@ -67,6 +67,11 @@ extend-exclude = '''
 )/
 '''
 
+[tool.flake8]
+max-line-length = 88
+extend-ignore = ["E203", "W503", "E501"]
+extend-select = ["B950"]
+
 [tool.mypy]
 python_version = "3.12"
 warn_return_any = true
