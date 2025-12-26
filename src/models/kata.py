@@ -42,5 +42,7 @@ class ExecutionResult(BaseModel):
     """Indicates if the kata execution was successful."""
     stdout: str
     """Standard output from the kata execution."""
+    stderr: str
+    """Standard error output from the kata execution."""
     execution_time_ms: int
     """Execution time in milliseconds."""
