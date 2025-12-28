@@ -242,6 +242,21 @@ Tests that upload and download kata code, verifying round-trip integrity:
 
 Tests will fail if the S3 endpoint or required bucket is not available (no skip behavior).
 
+### Execution Service Integration (`test_execution_integration.py`)
+
+Integration tests for the code execution service combining DynamoDB metadata, S3 code storage, and subprocess execution into a complete kata pipeline:
+
+- `test_full_kata_pipeline_integration`: Full end-to-end flow: (1) upload code to S3, (2) create metadata in DynamoDB, (3) fetch metadata and code, (4) execute retrieved code. Validates that all components integrate correctly.
+- `test_kata_execution_with_exception_integration`: Pipeline scenario where uploaded code raises an exception during execution. Verifies exception capture and `success=False` status.
+- `test_multiple_kata_executions_integration`: Create and execute multiple independent katas, ensuring isolation and correct content retrieval for each.
+
+Tests will fail if DynamoDB, S3, or execution environment is unavailable.
+
+**Fixtures Used:**
+
+- `ensure_dynamo_available`: Real DynamoDB client
+- `ensure_s3_available`: Real S3 client
+
 ## End-to-End Tests
 
 Will test complete request-response flows through FastAPI endpoints and Lambda handlers against LocalStack or test AWS environment.
