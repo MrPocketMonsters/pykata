@@ -33,7 +33,7 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          pytest -m "not integration and not dev_integration" --cov=src --cov-report=term-missing --cov-report=xml --cov-fail-under=70
+          pytest -m unit --cov=src --cov-report=term-missing --cov-report=xml --cov-fail-under=70
 
       - name: Upload coverage to Codecov
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
@@ -47,7 +47,7 @@ jobs:
     needs: ci
     services:
       localstack:
-        image: localstack/localstack:1.5
+        image: localstack/localstack:latest
         env:
           SERVICES: dynamodb,s3,lambda,apigateway
           DEBUG: "1"
