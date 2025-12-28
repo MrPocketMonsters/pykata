@@ -21,25 +21,70 @@ Execute all tests:
 pytest
 ```
 
-With coverage report:
+### Running Tests with Pytest Flags
+
+- `-v` / `--verbose`: Show detailed output for each test
+- `-vv`: Very verbose (even more detail)
+- `-s`: Show print statements and output
+- `-x`: Stop on first failure
+- `-k "pattern"`: Run only tests matching the pattern
+- `--cov=src`: Generate coverage report for `src/` directory
+- `--cov-report=html`: Generate HTML coverage report
+
+Example:
 
 ```bash
-pytest --cov=src
-```
-
-Specific test file:
-
-```bash
-pytest tests/unit/test_execution_service.py -v
+pytest tests/unit/test_config.py -v -s --cov=src
 ```
 
 ## Unit Tests
+
+### Configuration (`unit/test_config.py`)
+
+Tests for the application configuration system (`src/config.py`). Validates that settings are correctly loaded from environment variables and `.env` files with proper type conversion.
+
+#### Shared Fixtures
+
+**`clean_env` (defined in `conftest.py`)**:
+A pytest fixture that provides a clean testing environment by:
+
+- Removing all configuration-related environment variables
+- Patching the `Settings` class to disable `.env` file loading
+- Automatically restoring the original configuration after each test
+
+This ensures tests read actual default values instead of values from the `.env` file.
+
+**`force_valid_logging` (autouse, defined in `conftest.py`)**:
+Applied to every test. It disables `.env` loading for the Settings model and forces `LOG_LEVEL=INFO` to avoid failures when a local `.env` contains invalid log levels during test collection.
+
+**Usage**: Add `clean_env` parameter to any test that needs to verify default behavior:
+
+```python
+def test_default_app_name(self, clean_env):
+    settings = Settings()
+    assert settings.APP_NAME == 'pykata'
+```
+
+**Test Cases (reduced suite):**
+
+- **Default Values** (`TestConfigDefaults`): Core defaults (APP_NAME, LOG_LEVEL, EXECUTION_TIMEOUT, AWS endpoints)
+- **Environment Variables** (`TestEnvironmentVariables`): APP_NAME override, timeouts, APP_ENV normalization
+- **Boolean Conversion** (`TestBooleanConversion`): Single true/false conversions for DEBUG
+- **Type Conversion** (`TestTypeConversion`): Timeout string→int, invalid timeout, negative timeout
+- **Validation** (`TestValidation`): Invalid/normalized LOG_LEVEL; invalid APP_ENV
+- **AWS Configuration** (`TestAWSConfiguration`): Default LocalStack endpoints; override credentials
+- **Model Behavior** (`TestConfigurationModel`): `model_dump()` shape; extra env vars ignored
+
+**Coverage Target:**
+
+- Target: ≥90% for configuration module
+- Focus: Default values, type conversion, environment variable handling
 
 ### Execution Service (`unit/test_execution_service.py`)
 
 Tests for the secure code execution sandbox (`src/services/execution_service.py`). These tests validate the core isolation, timeout, and I/O capture mechanisms.
 
-#### Test Cases
+**Test Cases:**
 
 - **`test_execute_kata_success_stdout_and_time`**: Validates successful execution of code that reads input and prints output. Asserts:
   - `success=True`
@@ -65,7 +110,7 @@ Tests for the secure code execution sandbox (`src/services/execution_service.py`
   - stderr contains "Execution timed out."
   - `execution_time_ms` reflects the timeout duration
 
-#### Coverage Target
+**Coverage Target:**
 
 - Target: ≥80% for execution service
 - Focus: Subprocess isolation, timeout mechanism, I/O capture, error handling

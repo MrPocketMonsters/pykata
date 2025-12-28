@@ -8,6 +8,102 @@ Contains the core application code organized by concern:
 - **services/** - Business logic and external service integrations
 - **data/** - Seed data and sample katas
 
+## Configuration (`config.py`)
+
+Provides centralized configuration management for the PyKata application using Pydantic's `BaseSettings`.
+
+### How It Works
+
+Configuration values are loaded from environment variables with an optional `.env` file for local development:
+
+```python
+from src.config import settings
+
+# Access any configuration value
+app_name = settings.APP_NAME  # 'pykata'
+debug = settings.DEBUG  # True
+timeout = settings.EXECUTION_TIMEOUT  # 300
+```
+
+### Configuration Categories
+
+**Application Settings**:
+
+- `APP_NAME`: Application identifier (default: `'pykata'`)
+- `APP_ENV`: Deployment environment - dev, staging, or prod (default: `'dev'`)
+- `LOG_LEVEL`: Logging verbosity - DEBUG, INFO, WARNING, ERROR (default: `'INFO'`)
+- `DEBUG`: Enable debug mode (default: `True`)
+
+**AWS Credentials & Endpoints**:
+
+- `AWS_ACCESS_KEY_ID`: AWS account access key (default: `'test'`)
+- `AWS_SECRET_ACCESS_KEY`: AWS account secret key (default: `'test'`)
+- `AWS_DEFAULT_REGION`: Default AWS region (default: `'us-east-1'`)
+- `AWS_ENDPOINT`: LocalStack endpoint for AWS-compatible mock services (default: `'http://localhost:4566'`)
+- `AWS_S3_ENDPOINT`: S3-specific LocalStack endpoint (default: `'http://s3.localhost.localstack.cloud:4566'`)
+
+**AWS Resources**:
+
+- `DYNAMODB_TABLE_NAME`: DynamoDB table for kata metadata (default: `'kata'`)
+- `S3_BUCKET_NAME`: S3 bucket for user code storage (default: `'kata-code'`)
+
+**Execution Timeouts** (in seconds):
+
+- `LAMBDA_TIMEOUT`: Maximum time for Lambda function execution (default: `10`)
+- `EXECUTION_TIMEOUT`: Maximum time for user kata code execution (default: `300`)
+
+### Environment Setup
+
+1. Copy `.env.example` to `.env`:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Update values in `.env` as needed for your environment:
+   - For **local development** with LocalStack, use the provided defaults
+   - For **production**, set actual AWS credentials and endpoints
+   - For **debug mode**, set `DEBUG=1`, `DEBUG=true`, or `DEBUG=True` (all work equivalently)
+
+3. Pydantic will automatically:
+   - Load the `.env` file on startup
+   - Validate and convert values to correct types (strings to ints, booleans, etc.)
+   - Use defaults if environment variables are not set
+   - Ignore any extra environment variables not defined in Settings
+
+### Validation
+
+- `LOG_LEVEL` must be one of: DEBUG, INFO, WARNING, ERROR, CRITICAL (case-insensitive)
+- `APP_ENV` is normalized to lowercase and must be one of: dev, staging, prod, production
+- `LAMBDA_TIMEOUT` and `EXECUTION_TIMEOUT` must be positive integers; string inputs are converted, invalid values raise on first settings access
+
+### Accessing Settings
+
+A lazy, cached `settings` proxy defers instantiation until first access (avoids import-time failures if local `.env` is invalid):
+
+```python
+from src.config import settings
+
+# Application config
+if settings.APP_ENV == 'production':
+   print(f"Running {settings.APP_NAME} in production")
+
+# AWS resources
+table = dynamodb.Table(settings.DYNAMODB_TABLE_NAME)
+s3_bucket = s3.Bucket(settings.S3_BUCKET_NAME)
+
+# Execution control
+timeout = settings.EXECUTION_TIMEOUT
+```
+
+### Best Practices
+
+1. **Import settings once at module level**: Avoids repeated file I/O from `.env` parsing
+2. **Use defaults for development**: Only override settings in `.env` when necessary
+3. **Separate configs per environment**: Use different `.env` files or export environment variables in CI/CD
+4. **Validate on startup**: Pydantic catches type/validation errors immediately on import
+5. **Never commit `.env` file**: Add `.env` to `.gitignore` and provide `.env.example` template
+
 ## Services
 
 ### Execution Service (`execution_service.py`)
