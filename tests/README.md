@@ -2,6 +2,22 @@
 
 Comprehensive test suite for validating the functionality of service layers, API endpoints, and Lambda handlers. Tests are organized by scope and executed via pytest with coverage tracking.
 
+## Table of Contents
+
+- [Directory Structure](#directory-structure)
+- [Running Tests](#running-tests)
+  - [Running Tests with Pytest Flags](#running-tests-with-pytest-flags)
+- [Unit Tests](#unit-tests)
+  - [Logger](#logger-unittest_loggerpy)
+  - [Configuration](#configuration-unittest_configpy)
+  - [Execution Service](#execution-service-unittest_execution_servicepy)
+  - [Dynamo Service](#dynamo-service-unittest_dynamo_servicepy)
+- [Integration Tests](#integration-tests)
+  - [Prerequisites](#prerequisites)
+  - [Running Integration Tests](#running-integration-tests)
+  - [Dynamo Service Integration](#dynamo-service-integration-test_dynamo_integrationpy)
+- [End-to-End Tests](#end-to-end-tests)
+
 ## Directory Structure
 
 ```text
@@ -39,6 +55,16 @@ pytest tests/unit/test_config.py -v -s --cov=src
 
 ## Unit Tests
 
+This are tests for isolated components without external dependencies. Mocks and stubs are used as needed.
+
+### Running Unit Tests
+
+Use the following command to run all unit tests with coverage:
+
+```bash
+pytest -m unit -v -s --cov=src
+```
+
 ### Logger (`unit/test_logger.py`)
 
 Tests for the application logging system (`src/logger.py`). Validates that logger utilities work correctly for production use, including context managers, decorators, and level normalization.
@@ -65,7 +91,7 @@ Tests for the application logging system (`src/logger.py`). Validates that logge
 
 Tests for the application configuration system (`src/config.py`). Validates that settings are correctly loaded from environment variables and `.env` files with proper type conversion.
 
-#### Shared Fixtures (from `conftest.py`)
+**Shared Fixtures (from `conftest.py`):**
 
 - `clean_env`: Removes config env vars and disables `.env` loading to test defaults.
 - `force_valid_logging` (autouse): Forces a valid `LOG_LEVEL` and disables `.env` parsing for every test.
@@ -141,7 +167,57 @@ Tests for DynamoDB metadata service (`src/services/dynamo_service.py`) organized
 
 ## Integration Tests
 
-Will test service layers with mocked AWS clients (DynamoDB, S3) and verified interactions between components.
+Integration tests exercise real service interactions against a configured environment.
+
+**Directory Structure:**
+
+```text
+integration/     # Both environments
+├── dev/         # LocalStack + Terraform dev environment
+└── prod/        # AWS production environment
+```
+
+### Prerequisites
+
+- DynamoDB endpoint reachable (LocalStack via docker-compose, or AWS)
+- Kata table provisioned. For LocalStack dev, apply: see [terraform/environments/dev](../terraform/environments/dev)
+
+**Note:** Integration tests are excluded from the main pytest run in CI. The `integration` job ensures the dev environment is ready (Terraform applied) before running dev integration tests.
+
+**Shared Fixtures (from `conftest.py`):**
+
+- `ensure_dynamo_available`: Provides a configured DynamoDB client for integration tests.
+
+### Running Integration Tests
+
+- Dev suite (LocalStack or dev env):
+
+```bash
+pytest -m dev_integration -v -s
+```
+
+- Prod suite (AWS production):
+
+```bash
+pytest -m prod_integration -v -s
+```
+
+- All integration tests that are not production level:
+
+```bash
+pytest -m "integration and not prod_integration" -v -s
+```
+
+Note: CI workflow runs this set of tests after provisioning the dev environment.
+
+### Dynamo Service Integration (`test_dynamo_integration.py`)
+
+Tests that create a new kata with dummy info, list it, and fetch it:
+
+- `test_create_and_get_kata_integration`: Creates a kata (unique ID), then fetches by ID.
+- `test_list_contains_created_kata_integration`: Creates another kata, then verifies listing includes it.
+
+Tests will fail if the DynamoDB endpoint or required table is not available (no skip behavior).
 
 ## End-to-End Tests
 

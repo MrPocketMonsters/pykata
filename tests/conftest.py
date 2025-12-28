@@ -1,9 +1,32 @@
-"""Pytest configuration and shared fixtures for unit tests."""
+"""Pytest configuration and shared fixtures for all tests."""
 
 import boto3
 import pytest
 from botocore.stub import Stubber
 from pydantic_settings import SettingsConfigDict
+
+
+def pytest_collection_modifyitems(items):
+    """Apply markers to tests based on their file location.
+
+    Unit tests (tests/unit/*) get @pytest.mark.unit
+    Dev integration tests (tests/integration/dev/*)
+    get @pytest.mark.integration and @pytest.mark.dev_integration
+    Prod integration tests (tests/integration/prod/*)
+    get @pytest.mark.integration and @pytest.mark.prod_integration
+    """
+    for item in items:
+        file_path = str(item.fspath).replace("\\", "/")
+        if "/unit/" in file_path:
+            item.add_marker(pytest.mark.unit)
+        elif "/integration/" in file_path:
+            item.add_marker(pytest.mark.integration)
+        elif "/integration/dev/" in file_path:
+            item.add_marker(pytest.mark.integration)
+            item.add_marker(pytest.mark.dev_integration)
+        elif "/integration/prod/" in file_path:
+            item.add_marker(pytest.mark.integration)
+            item.add_marker(pytest.mark.prod_integration)
 
 
 @pytest.fixture
@@ -111,3 +134,22 @@ def stubbed_client():
         yield client, stubber
     finally:
         stubber.deactivate()
+
+
+@pytest.fixture(scope="module")
+def ensure_dynamo_available():
+    """Provide a DynamoDB client for integration tests.
+
+    Assumes the endpoint is available (CI ensures this via job ordering).
+    Integration tests run only in dev environment with LocalStack via CI.
+    """
+    from src.config import settings
+
+    client = boto3.client(
+        "dynamodb",
+        endpoint_url=settings.AWS_ENDPOINT,
+        region_name=settings.AWS_DEFAULT_REGION,
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+    )
+    return client
