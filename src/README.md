@@ -155,6 +155,49 @@ Valid log levels (from `settings.LOG_LEVEL`): `DEBUG`, `INFO`, `WARNING`, `ERROR
 
 ## Services
 
+### Dynamo Service (`services/dynamo_service.py`)
+
+Encapsulates DynamoDB access for kata metadata. Uses `boto3` with endpoints sourced from `settings` so it works against LocalStack or AWS transparently.
+
+**Capabilities:**
+
+- `get_kata(kata_id)`: Fetch a single kata record; raises `ItemNotFoundError` when absent and `TableNotFoundError` for missing tables.
+- `list_katas(limit, offset=0)`: Scan-based pagination using simple offset/limit slicing.
+- `create_kata(metadata)`: Persist a new `KataMetadata` item; returns `True` on success.
+
+**Error Handling:**
+
+- Maps DynamoDB `ResourceNotFound` errors to `TableNotFoundError`.
+- Wraps other client errors in `DynamoServiceError` for consistent upstream handling.
+
+**Usage:**
+
+```python
+from src.services.dynamo_service import get_kata, list_katas, create_kata
+from src.models.kata import KataMetadata
+
+# 1) Retrieve a kata by ID (point lookup)
+metadata = get_kata("kata-123")
+
+# 2) Browse katas with simple pagination (scan + slice)
+#    'limit' = page size; 'offset' = starting offset
+items = list_katas(limit=10, offset=0)
+
+# 3) Create a new kata (returns True on success)
+#    Example: clone an existing one and adjust fields
+new_metadata = KataMetadata(
+   id="kata-123-copy",
+   title=f"Copy of {metadata.title}",
+   description=metadata.description,
+   tags=metadata.tags,
+   difficulty=metadata.difficulty,
+   s3_key="katas/copy.py",
+   sample_input=metadata.sample_input,
+   sample_output=metadata.sample_output,
+)
+created = create_kata(new_metadata)
+```
+
 ### Execution Service (`execution_service.py`)
 
 Provides isolated execution of user-submitted kata code with strict timeout enforcement and cross-platform compatibility.

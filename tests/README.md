@@ -65,26 +65,18 @@ Tests for the application logging system (`src/logger.py`). Validates that logge
 
 Tests for the application configuration system (`src/config.py`). Validates that settings are correctly loaded from environment variables and `.env` files with proper type conversion.
 
-#### Shared Fixtures
+#### Shared Fixtures (from `conftest.py`)
 
-**`clean_env` (defined in `conftest.py`)**:
-A pytest fixture that provides a clean testing environment by:
+- `clean_env`: Removes config env vars and disables `.env` loading to test defaults.
+- `force_valid_logging` (autouse): Forces a valid `LOG_LEVEL` and disables `.env` parsing for every test.
+- `stubbed_client`: Provides a stubbed DynamoDB client using `botocore.stub.Stubber` for AWS-free tests.
 
-- Removing all configuration-related environment variables
-- Patching the `Settings` class to disable `.env` file loading
-- Automatically restoring the original configuration after each test
-
-This ensures tests read actual default values instead of values from the `.env` file.
-
-**`force_valid_logging` (autouse, defined in `conftest.py`)**:
-Applied to every test. It disables `.env` loading for the Settings model and forces `LOG_LEVEL=INFO` to avoid failures when a local `.env` contains invalid log levels during test collection.
-
-**Usage**: Add `clean_env` parameter to any test that needs to verify default behavior:
+**Usage**: Add `clean_env` to tests that need default settings:
 
 ```python
 def test_default_app_name(self, clean_env):
-    settings = Settings()
-    assert settings.APP_NAME == 'pykata'
+  settings = Settings()
+  assert settings.APP_NAME == 'pykata'
 ```
 
 **Test Cases (reduced suite):**
@@ -132,10 +124,20 @@ Tests for the secure code execution sandbox (`src/services/execution_service.py`
   - stderr contains "Execution timed out."
   - `execution_time_ms` reflects the timeout duration
 
+### Dynamo Service (`unit/test_dynamo_service.py`)
+
+Tests for DynamoDB metadata service (`src/services/dynamo_service.py`) organized by method-focused classes. Uses the shared `stubbed_client` fixture for isolated AWS interactions.
+
+**Classes & Cases:**
+
+- `TestGetKata`: happy path returns `KataMetadata`; raises `ItemNotFoundError` on missing items; maps `ResourceNotFound` to `TableNotFoundError`.
+- `TestListKatas`: validates offset/limit slicing; propagates missing table errors during scans.
+- `TestCreateKata`: persists new items; raises on missing table when writing.
+
 **Coverage Target:**
 
-- Target: ≥80% for execution service
-- Focus: Subprocess isolation, timeout mechanism, I/O capture, error handling
+- Target: ≥80% for Dynamo service
+- Focus: request/response mapping, error translation, pagination behavior
 
 ## Integration Tests
 

@@ -1,6 +1,8 @@
 """Pytest configuration and shared fixtures for unit tests."""
 
+import boto3
 import pytest
+from botocore.stub import Stubber
 from pydantic_settings import SettingsConfigDict
 
 
@@ -86,3 +88,26 @@ def force_valid_logging(monkeypatch):
     monkeypatch.setenv("LOG_LEVEL", "INFO")
 
     yield
+
+
+@pytest.fixture
+def stubbed_client():
+    """Provide a Stubber-backed DynamoDB client so tests run without real AWS calls.
+
+    Yields a tuple of (client, stubber) so tests can register expected responses and
+    assertions while avoiding network traffic or live AWS credentials.
+    """
+
+    client = boto3.client(
+        "dynamodb",
+        region_name="us-east-1",
+        endpoint_url="http://localhost:4566",
+        aws_access_key_id="test",
+        aws_secret_access_key="test",
+    )
+    stubber = Stubber(client)
+    stubber.activate()
+    try:
+        yield client, stubber
+    finally:
+        stubber.deactivate()
