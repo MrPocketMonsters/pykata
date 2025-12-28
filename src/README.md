@@ -12,7 +12,7 @@ Contains the core application code organized by concern:
 
 Provides centralized configuration management for the PyKata application using Pydantic's `BaseSettings`.
 
-### How It Works
+**How It Works:**
 
 Configuration values are loaded from environment variables with an optional `.env` file for local development:
 
@@ -96,13 +96,62 @@ s3_bucket = s3.Bucket(settings.S3_BUCKET_NAME)
 timeout = settings.EXECUTION_TIMEOUT
 ```
 
-### Best Practices
+**Best Practices:**
 
 1. **Import settings once at module level**: Avoids repeated file I/O from `.env` parsing
 2. **Use defaults for development**: Only override settings in `.env` when necessary
 3. **Separate configs per environment**: Use different `.env` files or export environment variables in CI/CD
 4. **Validate on startup**: Pydantic catches type/validation errors immediately on import
 5. **Never commit `.env` file**: Add `.env` to `.gitignore` and provide `.env.example` template
+
+## Logger (`logger.py`)
+
+Provides structured logging utilities with context management, timing, and function call tracking for consistent logging across the application.
+
+**How It Works:**
+
+The logger initializes on import and provides utilities for different logging scenarios:
+
+```python
+from src.logger import get_logger, log_context, log_timer, log_call
+
+# Get a logger for your module
+logger = get_logger(__name__)
+
+# Instrument a function with automatic logging
+@log_call
+def execute_kata_code(code, user_input, timeout=300):
+    with log_context('execute_kata_code', timeout=timeout):
+        with log_timer('subprocess_execution'):
+            result = subprocess.run(...)
+        return result
+```
+
+### Logger Utilities
+
+**`get_logger(name=None)`**:
+Returns a logger instance for the specified module name. Level is configured from `settings.LOG_LEVEL`.
+
+**`log_context(context_name, **context_vars)`**:
+Context manager that logs operation entry/exit with optional context variables. Automatically logs and re-raises exceptions.
+
+**`log_timer(operation_name, level=logging.INFO)`**:
+Context manager that measures and logs operation execution time.
+
+**`@log_call`**:
+Decorator that automatically logs function entry with arguments, return values, and exceptions. Preserves function metadata.
+
+### Configuration
+
+Valid log levels (from `settings.LOG_LEVEL`): `DEBUG`, `INFO`, `WARNING`, `ERROR`. Invalid values default to `INFO`.
+
+**Best Practices:**
+
+1. **Use `@log_call` on public functions**: Automatically logs entry/exit without manual log statements
+2. **Use `log_context` for workflows**: Groups related logs and captures operation context
+3. **Use `log_timer` for performance-sensitive code**: Automatically measures and reports execution time
+4. **Avoid log spam**: Log at appropriate levels (DEBUG for detailed info, INFO for milestones, WARNING/ERROR for issues)
+5. **Include context variables**: Use `log_context(**kwargs)` to add searchable metadata for tracing
 
 ## Services
 

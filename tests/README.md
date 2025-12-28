@@ -39,6 +39,28 @@ pytest tests/unit/test_config.py -v -s --cov=src
 
 ## Unit Tests
 
+### Logger (`unit/test_logger.py`)
+
+Tests for the application logging system (`src/logger.py`). Validates that logger utilities work correctly for production use, including context managers, decorators, and level normalization.
+
+**Test Cases:**
+
+- **`test_normalize_level_*`** (`TestNormalizeLevel`): Validates the `_normalize_level()` helper that converts string levels (DEBUG, INFO, WARNING, ERROR) and integer levels to valid logging constants. Defaults to INFO for invalid values.
+
+- **`test_get_logger_*`** (`TestLoggerInitialization`): Verifies logger instances are created correctly and `get_logger(name)` returns properly named logger objects.
+
+- **`test_log_context_*`** (`TestLogContext`): Tests the `log_context()` context manager for logging entry/exit of code blocks, capturing exceptions, and re-raising them after logging.
+
+- **`test_log_timer_*`** (`TestLogTimer`): Validates the `log_timer()` context manager for measuring and logging operation execution time, respecting custom logging levels, and completing logging even with exceptions.
+
+- **`test_log_call_*`** (`TestLogCall`): Tests the `@log_call` decorator for automatic logging of function entry/exit, exception capture, and metadata preservation (`__name__`, `__doc__`).
+
+- **`test_logger_*`** (`TestLoggerIntegration`): Validates overall logger functionality including logger methods and different module logger instances.
+
+**Coverage Target:**
+
+≥85% for logger module. Focus: Helper functions, context managers, decorator behavior.
+
 ### Configuration (`unit/test_config.py`)
 
 Tests for the application configuration system (`src/config.py`). Validates that settings are correctly loaded from environment variables and `.env` files with proper type conversion.
