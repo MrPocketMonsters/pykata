@@ -21,11 +21,10 @@ def pytest_collection_modifyitems(items):
             item.add_marker(pytest.mark.unit)
         elif "/integration/" in file_path:
             item.add_marker(pytest.mark.integration)
-        elif "/integration/dev/" in file_path:
-            item.add_marker(pytest.mark.integration)
+
+        if "/integration/dev/" in file_path:
             item.add_marker(pytest.mark.dev_integration)
         elif "/integration/prod/" in file_path:
-            item.add_marker(pytest.mark.integration)
             item.add_marker(pytest.mark.prod_integration)
 
 
@@ -136,6 +135,29 @@ def stubbed_client():
         stubber.deactivate()
 
 
+@pytest.fixture
+def stubbed_s3_client():
+    """Provide a Stubber-backed S3 client so tests run without real AWS calls.
+
+    Yields a tuple of (client, stubber) so tests can register expected responses and
+    assertions while avoiding network traffic or live AWS credentials.
+    """
+
+    client = boto3.client(
+        "s3",
+        region_name="us-east-1",
+        endpoint_url="http://localhost:4566",
+        aws_access_key_id="test",
+        aws_secret_access_key="test",
+    )
+    stubber = Stubber(client)
+    stubber.activate()
+    try:
+        yield client, stubber
+    finally:
+        stubber.deactivate()
+
+
 @pytest.fixture(scope="module")
 def ensure_dynamo_available():
     """Provide a DynamoDB client for integration tests.
@@ -147,6 +169,25 @@ def ensure_dynamo_available():
 
     client = boto3.client(
         "dynamodb",
+        endpoint_url=settings.AWS_ENDPOINT,
+        region_name=settings.AWS_DEFAULT_REGION,
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+    )
+    return client
+
+
+@pytest.fixture(scope="module")
+def ensure_s3_available():
+    """Provide an S3 client for integration tests.
+
+    Assumes the endpoint is available (CI ensures this via job ordering).
+    Integration tests run only in dev environment with LocalStack via CI.
+    """
+    from src.config import settings
+
+    client = boto3.client(
+        "s3",
         endpoint_url=settings.AWS_ENDPOINT,
         region_name=settings.AWS_DEFAULT_REGION,
         aws_access_key_id=settings.AWS_ACCESS_KEY_ID,

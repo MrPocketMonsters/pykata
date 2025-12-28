@@ -165,6 +165,20 @@ Tests for DynamoDB metadata service (`src/services/dynamo_service.py`) organized
 - Target: ≥80% for Dynamo service
 - Focus: request/response mapping, error translation, pagination behavior
 
+### S3 Service (`unit/test_s3_service.py`)
+
+Tests for S3 code storage service (`src/services/s3_service.py`) organized by method-focused classes. Uses the shared `stubbed_s3_client` fixture for isolated AWS interactions.
+
+**Classes & Cases:**
+
+- `TestUploadKataCode`: successful upload returns S3 key; raises `BucketNotFoundError` for missing bucket; handles special characters and newlines in code.
+- `TestDownloadKataCode`: successful download returns code content; raises `ObjectNotFoundError` for missing keys; raises `BucketNotFoundError` for missing bucket.
+
+**Coverage Target:**
+
+- Target: ≥80% for S3 service
+- Focus: upload/download mapping, error translation, special character handling
+
 ## Integration Tests
 
 Integration tests exercise real service interactions against a configured environment.
@@ -218,6 +232,15 @@ Tests that create a new kata with dummy info, list it, and fetch it:
 - `test_list_contains_created_kata_integration`: Creates another kata, then verifies listing includes it.
 
 Tests will fail if the DynamoDB endpoint or required table is not available (no skip behavior).
+
+### S3 Service Integration (`test_s3_integration.py`)
+
+Tests that upload and download kata code, verifying round-trip integrity:
+
+- `test_upload_and_download_kata_code_integration`: Upload code with special characters, then download and verify content matches.
+- `test_upload_multiple_katas_integration`: Upload multiple katas independently, then verify each can be downloaded with correct content.
+
+Tests will fail if the S3 endpoint or required bucket is not available (no skip behavior).
 
 ## End-to-End Tests
 

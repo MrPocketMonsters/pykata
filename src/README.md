@@ -198,6 +198,34 @@ new_metadata = KataMetadata(
 created = create_kata(new_metadata)
 ```
 
+### S3 Service (`services/s3_service.py`)
+
+Encapsulates S3 access for kata code storage. Uses `boto3` with endpoints sourced from `settings` so it works against LocalStack or AWS transparently.
+
+**Capabilities:**
+
+- `upload_kata_code(kata_id, code)`: Store kata code in S3 and return the generated key (`katas/{kata_id}.py`).
+- `download_kata_code(s3_key)`: Retrieve kata code from S3 by key.
+
+**Error Handling:**
+
+- Maps S3 `NoSuchBucket` errors to `BucketNotFoundError`.
+- Maps S3 `NoSuchKey` errors to `ObjectNotFoundError`.
+- Wraps other client errors in `S3ServiceError` for consistent upstream handling.
+
+**Usage:**
+
+```python
+from src.services.s3_service import upload_kata_code, download_kata_code
+
+# 1) Upload kata code (returns S3 key)
+code = "print('hello')"
+s3_key = upload_kata_code("kata-123", code)  # Returns: "katas/kata-123.py"
+
+# 2) Download kata code (retrieve by key)
+retrieved_code = download_kata_code(s3_key)
+```
+
 ### Execution Service (`execution_service.py`)
 
 Provides isolated execution of user-submitted kata code with strict timeout enforcement and cross-platform compatibility.
