@@ -12,10 +12,18 @@ Comprehensive test suite for validating the functionality of service layers, API
   - [Configuration](#configuration-unittest_configpy)
   - [Execution Service](#execution-service-unittest_execution_servicepy)
   - [Dynamo Service](#dynamo-service-unittest_dynamo_servicepy)
+  - [S3 Service](#s3-service-unittest_s3_servicepy)
+  - [API Exception Handlers](#api-exception-handlers-unittest_api_exceptionspy)
+  - [API Middleware](#api-middleware-unittest_api_middlewarepy)
+  - [API Health Check](#api-health-check-unittest_api_healthpy)
+  - [Katas List Endpoint](#katas-list-endpoint-unittest_api_kataspy)
+  - [Single Kata Endpoint](#single-kata-endpoint-unittest_api_single_katapy)
+  - [Kata Execution Endpoint](#kata-execution-endpoint-unittest_api_kata_runpy)
 - [Integration Tests](#integration-tests)
   - [Prerequisites](#prerequisites)
   - [Running Integration Tests](#running-integration-tests)
   - [Dynamo Service Integration](#dynamo-service-integration-test_dynamo_integrationpy)
+  - [S3 Service Integration](#s3-service-integration-test_s3_integrationpy)
 - [End-to-End Tests](#end-to-end-tests)
 
 ## Directory Structure
@@ -62,7 +70,7 @@ This are tests for isolated components without external dependencies. Mocks and 
 Use the following command to run all unit tests with coverage:
 
 ```bash
-pytest -m unit -v -s --cov=src
+pytest -m unit -v --cov=src --cov-report=term-missing
 ```
 
 ### Logger (`unit/test_logger.py`)
@@ -85,7 +93,8 @@ Tests for the application logging system (`src/logger.py`). Validates that logge
 
 **Coverage Target:**
 
-≥85% for logger module. Focus: Helper functions, context managers, decorator behavior.
+- Target: ≥85% for logger module
+- Focus: Helper functions, context managers, decorator behavior
 
 ### Configuration (`unit/test_config.py`)
 
@@ -159,6 +168,10 @@ Tests for DynamoDB metadata service (`src/services/dynamo_service.py`) organized
 - `TestGetKata`: happy path returns `KataMetadata`; raises `ItemNotFoundError` on missing items; maps `ResourceNotFound` to `TableNotFoundError`.
 - `TestListKatas`: validates offset/limit slicing; propagates missing table errors during scans.
 - `TestCreateKata`: persists new items; raises on missing table when writing.
+- `TestGetKataErrorHandling`: Handles BotoCoreError and other exceptions gracefully.
+- `TestListKatasErrorHandling`: Validates error paths for scan operations.
+- `TestCreateKataErrorHandling`: Tests error handling for put_item operations.
+- `TestCheckHealthDynamo`: Validates DynamoDB health check endpoint.
 
 **Coverage Target:**
 
@@ -173,11 +186,215 @@ Tests for S3 code storage service (`src/services/s3_service.py`) organized by me
 
 - `TestUploadKataCode`: successful upload returns S3 key; raises `BucketNotFoundError` for missing bucket; handles special characters and newlines in code.
 - `TestDownloadKataCode`: successful download returns code content; raises `ObjectNotFoundError` for missing keys; raises `BucketNotFoundError` for missing bucket.
+- `TestUploadKataCodeErrorHandling`: Handles BotoCoreError during upload operations.
+- `TestDownloadKataCodeErrorHandling`: Tests error handling for download operations.
+- `TestCheckHealthS3`: Validates S3 health check endpoint.
 
 **Coverage Target:**
 
 - Target: ≥80% for S3 service
 - Focus: upload/download mapping, error translation, special character handling
+
+### API Exception Handlers (`unit/test_api_exceptions.py`)
+
+Tests for global exception handlers in the FastAPI application (`src/api/exceptions.py`). Validates that all HTTP error responses follow a consistent structure and properly handle different error scenarios.
+
+**Test Application Setup:**
+
+Creates a separate FastAPI instance with test endpoints specifically designed to trigger each exception type. Uses `raise_server_exceptions=False` in the test client to capture exception handler responses instead of re-raising exceptions.
+
+**Test Endpoints:**
+
+- `/`: Root endpoint returning `{"message": "Hello World"}`
+- `/test/400`: Accepts `param: int` to trigger validation errors
+- `/test/validation`: POST endpoint accepting `param: int` for body validation
+- `/test/408`: Raises `HTTPException(408)` to trigger timeout handler
+- `/test/500`: Raises `ValueError` to trigger global exception handler
+
+**Test Classes:**
+
+**`TestBadRequest`**: Validates 400 Bad Request handler for validation failures.
+
+- `test_validation_error_returns_400`: Verifies 400 status code for invalid query params
+- `test_validation_error_response_structure`: Checks response includes `status_code`, `detail`, and `errors` fields
+- `test_post_validation_error_returns_400`: Validates POST body validation triggers same 400 response
+
+**`TestNotFound`**: Validates 404 Not Found handler for non-existent routes.
+
+- `test_not_found_returns_404`: Verifies 404 status code for missing routes
+- `test_not_found_response_structure`: Checks response includes `status_code`, `detail`, and `path` fields
+- `test_404_with_different_paths`: Validates handler works consistently across multiple non-existent paths
+
+**`TestInternalServerError`**: Validates 500 handler for unhandled exceptions.
+
+- `test_unhandled_exception_returns_500`: Verifies 500 status code for unexpected exceptions
+- `test_internal_error_response_structure`: Checks response includes `status_code` and `detail` fields
+- `test_internal_error_does_not_expose_traceback`: Ensures sensitive exception details are not exposed to clients
+
+**`TestRequestTimeout`**: Validates 408 Request Timeout handler.
+
+- `test_timeout_exception_returns_408`: Verifies 408 status code when timeout exception is raised
+- `test_timeout_response_structure`: Checks response includes `status_code`, `detail`, and `path` fields
+
+**`TestHealthcheck`**: Validates normal endpoint behavior is unaffected by exception handlers.
+
+- `test_root_endpoint_returns_200`: Ensures healthy endpoints return 200 and expected response
+
+**Coverage Target:**
+
+- Target: ≥90% for exception handlers module
+- Focus: Response structure consistency, status code accuracy, error detail exposure control
+
+### API Middleware (`unit/test_api_middleware.py`)
+
+Tests for the HTTP logging middleware that logs each incoming request and its response with latency.
+
+**Test Cases:**
+
+- `test_middleware_logs_root_request`: Verifies a request to `/` generates an INFO log containing method, path and `latency_ms=` token.
+- `test_middleware_logs_health_status`: Verifies `/health` request logs include the returned status code.
+- `test_middleware_latency_is_numeric`: Verifies the `latency_ms` value is present and parseable as a float.
+
+**Coverage Target:**
+
+- Target: ≥90% for API middleware tests
+- Focus: Request/response logging, latency formatting, status propagation
+
+### API Health Check (`unit/test_api_health.py`)
+
+Tests for the health check endpoint in the FastAPI application (`src/api/main.py`). Validates the `GET /health` endpoint correctly reports service connectivity for DynamoDB and S3 with appropriate HTTP status codes.
+
+**Test Application Setup:**
+
+Uses the production FastAPI application instance imported from `src.api.main`. Fixtures from `conftest.py` mock the `check_dynamo_health()` and `check_s3_health()` functions using `monkeypatch.setattr()` to control service health states during testing.
+
+**Shared Fixtures (from `conftest.py`):**
+
+- `mock_dynamo_health_up`: Mocks DynamoDB health check to return `True`
+- `mock_dynamo_health_down`: Mocks DynamoDB health check to return `False`
+- `mock_s3_health_up`: Mocks S3 health check to return `True`
+- `mock_s3_health_down`: Mocks S3 health check to return `False`
+
+**Test Classes:**
+
+**`TestHealthCheckAllServicesHealthy`**: Validates endpoint behavior when all services are healthy.
+
+- `test_health_all_services_up`: Verifies endpoint returns 200 status code with `{"status": "healthy", "services": {"dynamodb": true, "s3": true}}`
+- `test_health_response_structure`: Validates response structure includes required `status` and `services` fields
+
+**`TestHealthCheckDynamoDown`**: Validates endpoint behavior when DynamoDB service is unavailable.
+
+- `test_health_dynamodb_down`: Verifies endpoint returns 503 Unavailable status with S3 healthy but DynamoDB down
+- `test_health_dynamodb_down_returns_unavailable`: Checks response includes `"status": "degraded"` when any service is down
+
+**`TestHealthCheckS3Down`**: Validates endpoint behavior when S3 service is unavailable.
+
+- `test_health_s3_down`: Verifies endpoint returns 503 Unavailable status with DynamoDB healthy but S3 down
+- `test_health_s3_down_returns_unavailable`: Checks response includes `"status": "degraded"` when any service is down
+
+**`TestHealthCheckAllServicesDown`**: Validates endpoint behavior when all services are unavailable.
+
+- `test_health_all_services_down`: Verifies endpoint returns 503 Unavailable status with both services down
+
+**`TestHealthCheckIntegration`**: Validates overall health check functionality and integration with root endpoint.
+
+- `test_health_endpoint_exists`: Confirms the `/health` endpoint is accessible and defined
+- `test_health_response_is_json`: Validates response has correct JSON content-type header
+- `test_root_endpoint_still_works`: Ensures the root endpoint (`GET /`) still functions correctly after health check addition
+
+**Coverage Target:**
+
+- Target: ≥90% for health check endpoint
+- Focus: Service status combinations, response structure, status code accuracy
+
+### Katas List Endpoint (`unit/test_api_katas.py`)
+
+Tests for the `GET /katas` endpoint that lists kata metadata with pagination. Validates response schema, pagination behavior, and error handling for service failures. Tests are organized into two classes: response validation and exception handling.
+
+**Shared Fixtures (from `conftest.py`):**
+
+- `kata_metadata_factory`: Factory fixture to create KataMetadata instances with variable indices for testing pagination and list operations
+
+**Test Classes:**
+
+**`TestListKatasEndpointResponses`**: Validates successful response scenarios.
+
+- `test_returns_list_with_default_pagination`: Verifies endpoint returns 200 with JSON array containing metadata objects (id, title, description, tags, difficulty) and excludes `s3_key` field
+- `test_limit_and_offset_paginate_correctly`: Validates custom `limit` and `offset` query params correctly slice and paginate results
+- `test_response_schema_contains_expected_fields_and_no_code`: Confirms response contains all required metadata fields and `s3_key` is not present
+
+**`TestListKatasEndpointExceptions`**: Validates error handling and exception mapping.
+
+- `test_dynamo_errors_map_to_http_errors`: Tests DynamoDB service errors return HTTP 500 with generic error message without exposing internal exception details
+- `test_exceptions_do_not_expose_internal_details`: Validates generic exceptions result in HTTP 500 responses without leaking sensitive error information
+
+**Coverage Target:**
+
+- Target: ≥90% for katas list endpoint
+- Focus: Pagination logic, response filtering, error mapping
+
+### Single Kata Endpoint (`unit/test_api_single_kata.py`)
+
+Tests for the `GET /katas/{kata_id}` endpoint that retrieves metadata for a single kata by ID. Validates response schema, error handling for not found and service failures. Tests are organized into two classes: response validation and exception handling.
+
+**Shared Fixtures (from `conftest.py`):**
+
+- `kata_metadata_factory`: Factory fixture to create KataMetadata instances for testing different kata IDs
+- `kata_code`: Fixture providing default kata code for response validation
+
+**Test Classes:**
+
+**`TestSingleKataEndpointResponses`**: Validates successful response scenarios.
+
+- `test_return_kata_correctly`: Verifies endpoint returns 200 with JSON object containing metadata fields (id, title, description, tags, difficulty, s3_key, sample_input, sample_output)
+- `test_response_schema_contains_expected_fields`: Confirms response contains all required metadata fields and excludes `s3_key`
+- `test_code_content_is_returned`: Validates that the `code` field is included in the response and matches expected content from S3
+
+**`TestSingleKataEndpointExceptions`**: Validates error handling and exception mapping.
+
+- `test_dynamo_errors_map_to_http_errors`: Tests DynamoDB service errors return HTTP 500 with generic error message without exposing internal exception details
+- `test_dynamo_item_not_found_maps_to_404`: Specifically tests that when a kata ID does not exist, the endpoint returns HTTP 404 Not Found with generic error message
+- `test_s3_errors_map_to_http_errors`: Tests S3 service errors return HTTP 500 with generic error message without exposing internal exception details
+- `test_s3_object_not_found_maps_to_404`: Specifically tests that when the kata code is missing in S3, the endpoint returns HTTP 404 Not Found with generic error message
+- `test_exceptions_do_not_expose_internal_details`: Validates that generic exceptions from either DynamoDB or S3 services result in HTTP 500 responses without leaking sensitive error information
+
+**Coverage Target:**
+
+- Target: ≥90% for single kata endpoint
+- Focus: Response structure, error mapping, not found handling
+
+### Kata Execution Endpoint (`unit/test_api_kata_run.py`)
+
+Tests for the `POST /katas/run` endpoint that executes a kata with provided input data. Validates execution result schema, error handling for service failures, and timeout behavior. Tests are organized into two classes: response validation and exception handling.
+
+**Shared Fixtures (from `conftest.py`):**
+
+- `kata_metadata`: Fixture providing default kata metadata (kata-1)
+- `kata_execution`: Fixture providing default kata execution request payload
+- `execution_result`: Fixture providing default execution result response
+- `kata_code`: Fixture providing default kata code for execution
+
+**Test Classes:**
+
+**`TestRunKataEndpointResponses`**: Validates successful response scenarios and request validation.
+
+- `test_code_execution_returns_expected_result`: Verifies endpoint returns 200 with JSON object containing execution result fields (success, stdout, stderr, execution_time_ms) matching expected output for given input
+- `test_bad_request_on_invalid_payload`: Validates that invalid request payloads (missing fields, wrong types) return HTTP 400 Bad Request with generic error messages
+- `test_timeout_limits_are_enforced`: Tests that the timeout param is converted to a value within 0 and EXECUTION_TIMEOUT
+- `test_execution_timeout_maps_to_408`: Verifies that execution timeouts return HTTP 408 Request Timeout with generic error message
+
+**`TestRunKataEndpointExceptions`**: Validates error handling and exception mapping.
+
+- `test_dynamo_errors_map_to_http_errors`: Tests DynamoDB service errors return HTTP 500 with generic error message without exposing internal exception details
+- `test_dynamo_item_not_found_maps_to_404`: Specifically tests that when a kata ID does not exist, the endpoint returns HTTP 404 Not Found with generic error message
+- `test_s3_errors_map_to_http_errors`: Tests S3 service errors return HTTP 500 with generic error message without exposing internal exception details
+- `test_s3_object_not_found_maps_to_404`: Specifically tests that when the kata code is missing in S3, the endpoint returns HTTP 404 Not Found with generic error message
+- `test_exceptions_do_not_expose_internal_details`: Validates that generic exceptions from either DynamoDB, S3 or execution services result in HTTP 500 responses without leaking sensitive error information
+
+**Coverage Target:**
+
+- Target: ≥90% for kata execution endpoint
+- Focus: Execution result validation, error mapping, timeout handling
 
 ## Integration Tests
 
@@ -260,3 +477,29 @@ Tests will fail if DynamoDB, S3, or execution environment is unavailable.
 ## End-to-End Tests
 
 Will test complete request-response flows through FastAPI endpoints and Lambda handlers against LocalStack or test AWS environment.
+
+## Coverage Summary
+
+The test suite achieves excellent coverage across all modules:
+
+| Module | Coverage | Status |
+| --- | --- | --- |
+| API Exceptions | 100% | ✅ |
+| API Main | 97% | ✅ |
+| Config | 91% | ✅ |
+| Logger | 96% | ✅ |
+| Models | 100% | ✅ |
+| DynamoDB Service | 94% | ✅ |
+| Execution Service | 81% | ✅ |
+| S3 Service | 100% | ✅ |
+| **Total** | **95%** | **✅** |
+
+**Excluded from Coverage:**
+
+- `__code_wrapper.py`: Dynamic template execution (cannot be directly covered via unit tests)
+
+**Target Metrics:**
+
+- Minimum coverage per module: ≥80%
+- Overall coverage target: ≥85%
+- **Current achievement: 95% overall** ✅

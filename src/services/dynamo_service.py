@@ -164,3 +164,39 @@ def create_kata(
         raise DynamoServiceError("Failed to create kata") from exc
 
     return False
+
+
+@log_call
+def check_health(client=None, table_name: str = None) -> bool:
+    """
+    Check if DynamoDB service is accessible.
+
+    Attempts to describe the configured DynamoDB table to verify connectivity
+    and table availability.
+
+    Args:
+        client: Optional boto3 DynamoDB client (for testing).
+        table_name: Optional table name override (defaults to settings).
+
+    Returns:
+        bool: True if the table is accessible, False otherwise.
+    """
+    dynamo = client or _get_client()
+    table = table_name or settings.DYNAMODB_TABLE_NAME
+
+    try:
+        dynamo.describe_table(TableName=table)
+        logger.debug(f"DynamoDB health check passed for table '{table}'")
+        return True
+    except ClientError as exc:
+        error_code = exc.response.get("Error", {}).get("Code", "")
+        logger.warning(
+            f"DynamoDB health check failed for table '{table}': {error_code}"
+        )
+        return False
+    except BotoCoreError as exc:
+        logger.warning(f"DynamoDB health check failed: {exc}")
+        return False
+    except Exception as exc:
+        logger.warning(f"DynamoDB health check failed with unexpected error: {exc}")
+        return False

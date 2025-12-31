@@ -8,6 +8,283 @@ Contains the core application code organized by concern:
 - **services/** - Business logic and external service integrations
 - **data/** - Seed data and sample katas
 
+## Table of Contents
+
+- [API](#api-api)
+  - [Main Application](#main-application-apimainpy)
+  - [Health Check Service](#health-check-service-get-health)
+  - [Katas List Endpoint](#katas-list-endpoint-get-katas)
+  - [Single Kata Endpoint](#single-kata-endpoint-get-kataskata_id)
+  - [Kata Execution Endpoint](#kata-execution-endpoint-post-katasrun)
+  - [Exception Handlers](#exception-handlers-apiexceptionspy)
+- [Configuration](#configuration-configpy)
+- [Logger](#logger-loggerpy)
+- [Services](#services)
+  - [Dynamo Service](#dynamo-service-servicesdynamo_servicepy)
+  - [S3 Service](#s3-service-servicess3_servicepy)
+  - [Execution Service](#execution-service-execution_servicepy)
+
+## API (`api/`)
+
+### Main Application (`api/main.py`)
+
+The FastAPI application entrypoint that configures global exception handlers and defines API endpoints including health checks.
+
+**How It Works:**
+
+The application bootstraps by registering global exception handlers for consistent error responses across all endpoints.
+
+**Registered Handlers:**
+
+- `RequestValidationError` → 400 Bad Request with validation details
+- `404` → Not Found with requested path
+- `408` → Request Timeout with requested path
+- `Exception` → 500 Internal Server Error with generic message
+
+### Health Check Service (`GET /health`)
+
+Provides service connectivity validation by checking both DynamoDB and S3 availability.
+
+**Response:**
+
+- **Status 200** (Healthy): All services operational
+
+  ```json
+  {
+    "status": "healthy",
+    "services": {
+      "dynamodb": true,
+      "s3": true
+    }
+  }
+  ```
+
+- **Status 503** (Degraded): One or more services unavailable
+
+  ```json
+  {
+    "status": "degraded",
+    "services": {
+      "dynamodb": false,
+      "s3": true
+    }
+  }
+  ```
+
+**How It Works:**
+
+The endpoint calls `check_health()` methods from both DynamoDB and S3 services to verify connectivity. Returns 200 if all healthy, 503 if any degraded.
+
+**Usage Example:**
+
+```bash
+$ curl http://localhost:8000/health
+{"status":"healthy","services":{"dynamodb":true,"s3":true}}
+```
+
+### Katas List Endpoint (`GET /katas`)
+
+Provides paginated listing of kata metadata without code content. Returns metadata records only — code retrieval is a separate operation.
+
+**Query Parameters:**
+
+- `limit` (int, default: 20): Maximum number of items to return
+- `offset` (int, default: 0): Starting offset for pagination
+
+**Response:**
+
+- **Status 200** (Success): JSON array of kata metadata objects
+
+  ```json
+  [
+    {
+      "id": "kata-123",
+      "title": "Reverse String",
+      "description": "Reverse a given string",
+      "tags": ["strings", "algorithms"],
+      "difficulty": "beginner"
+    }
+  ]
+  ```
+
+  Note: The `s3_key`, `sample_input`, and `sample_output` fields are intentionally excluded to reduce payload size and avoid exposing code storage locations.
+
+**Error Responses:**
+
+- **400 Bad Request**: Invalid query parameters (negative limit/offset)
+- **500 Internal Server Error**: DynamoDB service errors (table unavailable, client errors)
+
+**How It Works:**
+
+The endpoint invokes `list_katas(limit, offset)` from the DynamoDB service to scan and paginate metadata records. Each record is filtered to exclude the `s3_key` field before returning to the client, ensuring code content remains inaccessible through this endpoint.
+
+**Usage Example:**
+
+```bash
+$ curl "http://localhost:8000/katas?limit=10&offset=0"
+[{"id":"kata-1","title":"Hello World",...}]
+```
+
+### Single Kata Endpoint (`GET /katas/{kata_id}`)
+
+Provides retrieval of a single kata's metadata by its unique identifier with code content and sample I/O included.
+
+**Path Parameters:**
+
+- `kata_id` (str): Unique identifier of the kata to retrieve
+
+**Response:**
+
+- **Status 200** (Success): JSON object of kata metadata
+
+  ```json
+  {
+    "id": "kata-123",
+    "title": "Reverse String",
+    "description": "Reverse a given string",
+    "tags": ["strings", "algorithms"],
+    "difficulty": "beginner",
+    "code": "print(input()[::-1])",
+    "sample_input": "hello",
+    "sample_output": "olleh"
+  }
+  ```
+
+**Error Responses:**
+
+- **404 Not Found**: Kata with specified `kata_id` does not exist
+- **500 Internal Server Error**: DynamoDB service errors (table unavailable, client errors)
+
+**How It Works:**
+
+The endpoint invokes `get_kata(kata_id)` from the DynamoDB service to fetch the metadata record. If found, it stores the metadata and then uses the `s3_key` field invoke `download_kata_code(s3_key)` from the S3 service to retrieve the actual code content. The final response includes all metadata fields plus the retrieved code except for `s3_key` to avoid exposing code storage locations.
+
+**Usage Example:**
+
+```bash
+$ curl "http://localhost:8000/katas/kata-123"
+{"id":"kata-123","title":"Reverse String",...}
+```
+
+### Kata Execution Endpoint (`POST /katas/run`)
+
+Provides execution of a kata associated to a user-submitted kata ID, input data and execution timeout, returning the execution result including output, errors, and execution time.
+
+**Request Body:**
+
+```json
+{
+  "kata_id": "kata-123",
+  "user_input": "sample input data",
+  "max_timeout": 10 // seconds
+}
+```
+
+**Response:**
+
+- **Status 200** (Success): JSON object with execution result
+
+  Correct execution:
+
+  ```json
+  {
+    "success": true,
+    "stdout": "output from code",
+    "stderr": "",
+    "execution_time_ms": 150 // milliseconds
+  }
+  ```
+
+  Execution with errors:
+
+  ```json
+  {
+    "success": false,
+    "stdout": "output from code before error",
+    "stderr": "error message from code",
+    "execution_time_ms": 50 // milliseconds
+  }
+  ```
+
+**Error Responses:**
+
+- **404 Not Found**: Kata with specified `kata_id` does not exist
+- **500 Internal Server Error**: DynamoDB, S3 service errors (table/bucket unavailable, client errors) or execution service failures.
+
+**How It Works:**
+
+The endpoint accepts a `KataExecution` request body containing the `kata_id`, `user_input`, and optional `max_timeout`. It first retrieves the kata metadata using `get_kata(kata_id)` from the DynamoDB service. If found, it downloads the kata code using `download_kata_code(s3_key)` from the S3 service. Finally, it invokes `execute_kata(code, user_input, timeout)` from the execution service to run the code with the provided input and timeout. The execution result, including success status, stdout, stderr, and execution time, is returned in the response.
+
+**Usage Example:**
+
+```bash
+$ curl -X POST "http://localhost:8000/katas/run" \
+  -H "Content-Type: application/json" \
+  -d '{"kata_id": "kata-123", "user_input": "hello"}'
+{"success":true,"stdout":"olleh","stderr":"","execution_time_ms":120}
+```
+
+**Notes:**
+
+- The `max_timeout` field is optional; if not provided, a default timeout from configuration is used.
+- If the `max_timeout` in negative or exceeds allowed limits, it is clamped to valid values.
+- It is not possible to run malicious code that affects the server due to the private storage code retrieval. If user-submitted code is allowed in the future, additional sandboxing and security measures must be implemented.
+
+### Exception Handlers (`api/exceptions.py`)
+
+Provides centralized exception handling for the FastAPI application with standardized JSON responses and comprehensive logging.
+
+**Response Structure:**
+
+All exception handlers return JSON with the following fields:
+
+- **`detail`**: Human-readable error message or description
+- **`status_code`**: HTTP status code (400, 404, 408, 500)
+- **`errors`** (400 only): List of validation errors with field details
+- **`path`** (404, 408 only): The requested path that triggered the error
+
+#### Available Handlers
+
+**`validation_exception_handler(request, exc)`**:
+
+Handles FastAPI validation errors (400 Bad Request) when request parameters or body fail Pydantic validation.
+
+- **Triggered by**: Invalid query params, path params, or request body
+- **Logs**: Warning with full validation error details
+- **Response**: `{"detail": "Bad Request", "status_code": 400, "errors": [...]}`
+
+**`not_found_exception_handler(request, exc)`**:
+
+Handles requests to non-existent routes (404 Not Found).
+
+- **Triggered by**: Routes that don't match any defined endpoint
+- **Logs**: Warning with requested path
+- **Response**: `{"detail": "Not Found", "status_code": 404, "path": "/requested/path"}`
+
+**`request_timeout_exception_handler(request, exc)`**:
+
+Handles request timeout errors (408 Request Timeout) when operations exceed allowed time.
+
+- **Triggered by**: Long-running operations that exceed timeout thresholds
+- **Logs**: Warning with requested path
+- **Response**: `{"detail": "Request Timeout", "status_code": 408, "path": "/requested/path"}`
+
+**`global_exception_handler(request, exc)`**:
+
+Catches all unhandled exceptions (500 Internal Server Error) as a safety net.
+
+- **Triggered by**: Any unhandled Python exception in endpoint code
+- **Logs**: Error with full exception traceback for debugging
+- **Response**: `{"detail": "Internal Server Error", "status_code": 500}` (no sensitive details exposed)
+
+**Best Practices:**
+
+1. **Raise HTTPException explicitly**: Use `raise HTTPException(status_code=408)` for controlled timeouts
+2. **Let validation happen automatically**: Pydantic will trigger 400 for invalid input types
+3. **Don't catch everything**: Let unexpected exceptions bubble up to the 500 handler for proper logging
+4. **Use appropriate status codes**: 400 for client errors, 408 for timeouts, 500 for server errors
+5. **Never expose sensitive data**: The 500 handler deliberately hides exception details from clients
+
 ## Configuration (`config.py`)
 
 Provides centralized configuration management for the PyKata application using Pydantic's `BaseSettings`.
@@ -164,6 +441,44 @@ Encapsulates DynamoDB access for kata metadata. Uses `boto3` with endpoints sour
 - `get_kata(kata_id)`: Fetch a single kata record; raises `ItemNotFoundError` when absent and `TableNotFoundError` for missing tables.
 - `list_katas(limit, offset=0)`: Scan-based pagination using simple offset/limit slicing.
 - `create_kata(metadata)`: Persist a new `KataMetadata` item; returns `True` on success.
+- `check_health()`: Verify DynamoDB table accessibility; returns `bool` without raising exceptions.
+
+**Error Handling:**
+
+- Maps DynamoDB `ResourceNotFound` errors to `TableNotFoundError`.
+- Wraps other client errors in `DynamoServiceError` for consistent upstream handling.
+- Health check gracefully handles all exceptions and returns boolean result.
+
+**Usage:**
+
+```python
+from src.services.dynamo_service import get_kata, list_katas, create_kata, check_health
+from src.models.kata import KataMetadata
+
+# 1) Validate DynamoDB service connectivity for health checks
+is_healthy = check_health()
+
+# 2) Retrieve a kata by ID (point lookup)
+metadata = get_kata("kata-123")
+
+# 3) Browse katas with simple pagination (scan + slice)
+#    'limit' = page size; 'offset' = starting offset
+items = list_katas(limit=10, offset=0)
+
+# 4) Create a new kata (returns True on success)
+#    Example: clone an existing one and adjust fields
+new_metadata = KataMetadata(
+   id="kata-123-copy",
+   title=f"Copy of {metadata.title}",
+   description=metadata.description,
+   tags=metadata.tags,
+   difficulty=metadata.difficulty,
+   s3_key="katas/copy.py",
+   sample_input=metadata.sample_input,
+   sample_output=metadata.sample_output,
+)
+created = create_kata(new_metadata)
+```
 
 **Error Handling:**
 
@@ -206,6 +521,7 @@ Encapsulates S3 access for kata code storage. Uses `boto3` with endpoints source
 
 - `upload_kata_code(kata_id, code)`: Store kata code in S3 and return the generated key (`katas/{kata_id}.py`).
 - `download_kata_code(s3_key)`: Retrieve kata code from S3 by key.
+- `check_health()`: Validate connectivity to the configured S3 bucket. Returns `True` if accessible, `False` if unavailable. Handles all exceptions gracefully without raising errors, suitable for health check endpoints.
 
 **Error Handling:**
 
@@ -216,13 +532,16 @@ Encapsulates S3 access for kata code storage. Uses `boto3` with endpoints source
 **Usage:**
 
 ```python
-from src.services.s3_service import upload_kata_code, download_kata_code
+from src.services.s3_service import upload_kata_code, download_kata_code, check_health
 
-# 1) Upload kata code (returns S3 key)
+# 1) Validate S3 service connectivity for health checks
+is_healthy = check_health()  # Returns True if S3 bucket is accessible, False otherwise
+
+# 2) Upload kata code (returns S3 key)
 code = "print('hello')"
 s3_key = upload_kata_code("kata-123", code)  # Returns: "katas/kata-123.py"
 
-# 2) Download kata code (retrieve by key)
+# 3) Download kata code (retrieve by key)
 retrieved_code = download_kata_code(s3_key)
 ```
 

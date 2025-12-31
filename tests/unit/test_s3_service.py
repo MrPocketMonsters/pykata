@@ -4,10 +4,13 @@ Tests use botocore.stub.Stubber to mock S3 operations without real AWS calls.
 """
 
 import pytest
+from botocore.exceptions import BotoCoreError
+from unittest.mock import MagicMock
 
 from src.services.s3_service import (
     upload_kata_code,
     download_kata_code,
+    check_health,
     S3ServiceError,
     BucketNotFoundError,
     ObjectNotFoundError,
@@ -186,3 +189,77 @@ class TestDownloadKataCode:
         result = download_kata_code("katas/kata-789.py")
 
         assert result == code
+
+
+class TestUploadKataCodeErrorHandling:
+    """Tests for error handling in upload_kata_code (BotoCoreError, etc)."""
+
+    def test_upload_botocore_error(self):
+        """Raises S3ServiceError on BotoCoreError during upload."""
+        client = MagicMock()
+        client.put_object.side_effect = BotoCoreError()
+
+        from unittest.mock import patch
+
+        with patch("src.services.s3_service._get_client", return_value=client):
+            with pytest.raises(S3ServiceError):
+                upload_kata_code("kata-1", "code")
+
+
+class TestDownloadKataCodeErrorHandling:
+    """Tests for error handling in download_kata_code (BotoCoreError, etc)."""
+
+    def test_download_botocore_error(self):
+        """Raises S3ServiceError on BotoCoreError during download."""
+        client = MagicMock()
+        client.get_object.side_effect = BotoCoreError()
+
+        from unittest.mock import patch
+
+        with patch("src.services.s3_service._get_client", return_value=client):
+            with pytest.raises(S3ServiceError):
+                download_kata_code("katas/kata-1.py")
+
+
+class TestCheckHealthS3:
+    """Tests for S3 health check."""
+
+    def test_check_health_success(self):
+        """Returns True when bucket is accessible."""
+        client = MagicMock()
+        client.head_bucket.return_value = {}
+
+        result = check_health(client=client)
+
+        assert result is True
+        client.head_bucket.assert_called_once()
+
+    def test_check_health_bucket_not_found(self):
+        """Returns False when bucket does not exist."""
+        from botocore.exceptions import ClientError
+
+        client = MagicMock()
+        error_response = {"Error": {"Code": "NoSuchBucket", "Message": "not found"}}
+        client.head_bucket.side_effect = ClientError(error_response, "HeadBucket")
+
+        result = check_health(client=client)
+
+        assert result is False
+
+    def test_check_health_botocore_error(self):
+        """Returns False on BotoCoreError."""
+        client = MagicMock()
+        client.head_bucket.side_effect = BotoCoreError()
+
+        result = check_health(client=client)
+
+        assert result is False
+
+    def test_check_health_generic_exception(self):
+        """Returns False on unexpected exceptions."""
+        client = MagicMock()
+        client.head_bucket.side_effect = Exception("Unexpected error")
+
+        result = check_health(client=client)
+
+        assert result is False

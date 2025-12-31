@@ -125,3 +125,37 @@ def download_kata_code(s3_key: str) -> str:
 
     logger.info(f"Downloaded kata code from {s3_key}")
     return code
+
+
+@log_call
+def check_health(client=None, bucket_name: str = None) -> bool:
+    """
+    Check if S3 service is accessible.
+
+    Attempts to list objects in the configured S3 bucket to verify connectivity
+    and bucket availability.
+
+    Args:
+        client: Optional boto3 S3 client (for testing).
+        bucket_name: Optional bucket name override (defaults to settings).
+
+    Returns:
+        bool: True if the bucket is accessible, False otherwise.
+    """
+    s3 = client or _get_client()
+    bucket = bucket_name or settings.S3_BUCKET_NAME
+
+    try:
+        s3.head_bucket(Bucket=bucket)
+        logger.debug(f"S3 health check passed for bucket '{bucket}'")
+        return True
+    except ClientError as exc:
+        error_code = exc.response.get("Error", {}).get("Code", "")
+        logger.warning(f"S3 health check failed for bucket '{bucket}': {error_code}")
+        return False
+    except BotoCoreError as exc:
+        logger.warning(f"S3 health check failed: {exc}")
+        return False
+    except Exception as exc:
+        logger.warning(f"S3 health check failed with unexpected error: {exc}")
+        return False

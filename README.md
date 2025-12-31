@@ -204,7 +204,7 @@ The pipelines will be implemented as follows:
 
 #### Phase 4: Testing & Quality Gates
 
-- Unit tests with pytest and coverage tracking (target ≥70%)
+- Unit tests with pytest and coverage tracking (target ≥85%)
 - Sample kata data for validation
 - Execution service tests with timeout and sandbox constraints
 
@@ -257,11 +257,13 @@ The pipelines will be implemented as follows:
 | 1.5 - Models & Services | 8 | ✅ Complete | Pydantic models and service layers in development |
 | 1.6 - FastAPI Endpoints | 8 | 🔄 In Progress | Ready to start |
 | 1.7 - Seed Data | 3 | ⬜ To Do | Depends on FastAPI & Terraform (1.4, 1.6) |
-| 1.8 - Tests (70% coverage) | 8 | 🔄 In Progress | Basic test structure, targeting 70%+ coverage |
+| 1.8 - Tests (85% coverage) | 8 | 🔄 In Progress | Basic test structure, targeting 85%+ coverage |
 | 1.9 - CI/CD Deployment | 5 | 🚫 Blocked | Depends on FastAPI endpoints (1.6) |
 | 1.10 - Documentation | 3 | 🔄 In Progress | API docs, LOCAL_SETUP, troubleshooting |
 
-**Sprint 1 Completion:** 50% (5 of 10 tasks complete | 3 in progress | 1 blocked)
+**Sprint 1 Completion:** 60% (5 of 10 tasks complete | 3 in progress | 1 blocked)
+
+> Tests and documentation are being counted as half done due to ongoing work.
 
 ### Implementation Highlights
 
@@ -270,7 +272,7 @@ The pipelines will be implemented as follows:
   - [tests/integration/dev/test_dynamo_integration.py](tests/integration/dev/test_dynamo_integration.py)
   - [tests/integration/dev/test_s3_integration.py](tests/integration/dev/test_s3_integration.py)
   - [tests/integration/dev/test_execution_integration.py](tests/integration/dev/test_execution_integration.py)
-- Coverage: Unit pipeline runs with coverage threshold ≥70% (currently ~86%).
+- Coverage: Unit pipeline runs with coverage threshold ≥85% (currently ~96%).
 - CI: GitHub Actions split jobs for unit and integration; integration job provisions LocalStack + Terraform before running dev tests.
 
 ## 🏆 Milestones
