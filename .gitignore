@@ -154,7 +154,7 @@ yarn-error.log*
 pnpm-debug.log*
 
 # Terraform plans (keep .terraform.lock.hcl tracked)
-*.tfplan
+*tfplan
 
 # Optional: Jupyter
 .ipynb_checkpoints/
