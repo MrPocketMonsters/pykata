@@ -41,7 +41,13 @@ By the end of this exercise, the repository will contain:
 - Infrastructure-as-code (Terraform) for both local (LocalStack) and cloud (AWS) deployments.
 - A working example of short-lived feature branches, PR-based validation, and automated deployment on merge to main.
 
-**Current Status:** Foundation phase complete (pre-commit, CI, LocalStack). Backend and infrastructure implementation in progress.
+**Current Status:**
+
+- Pre-commit, Pytest, and GitHub Actions CI/CD pipelines are fully implemented.
+- Docker Compose with LocalStack enables local development and testing.
+- Terraform modules for DynamoDB and S3 are complete; API Gateway and Lambda modules are pending.
+- Pydantic models and service layers for DynamoDB, S3, and code execution are implemented and tested.
+- Backend FastAPI endpoints for health check, kata listing, kata detail, and code execution are implemented and tested.
 
 ## 🛠️ Tech Stack
 
@@ -60,8 +66,8 @@ The planned architecture will consist of:
 
 - **API Gateway and Lambda functions** fronting three endpoints:
   - `GET /katas` returning kata metadata from DynamoDB
-  - `GET /katas/{id}` returning kata metadata plus a reference to its code in S3
-  - `POST /katas/{id}/run` fetching the kata `.py` from S3, executing it in a constrained subprocess with user input, and returning stdout/stderr
+  - `GET /katas/{id}` returning kata metadata plus `.py` code from S3
+  - `POST /katas/run` fetching the kata `.py` from S3, executing it in a constrained subprocess with user input, and returning stdout/stderr.
 - **Data layer:**
   - S3 bucket storing each kata as a single `main.py` file
   - DynamoDB table storing kata metadata (id, title, description, tags, s3_key, sample input/output)
@@ -71,39 +77,46 @@ The planned architecture will consist of:
   - Run form to submit custom input and display execution output
 - **Local development** will mirror the cloud stack using LocalStack and Docker Compose.
 
-Execution safety measures will be enforced: kata code will run in a subprocess with a strict timeout and no network access. Inputs will be size-limited, and failures will return captured stderr to the caller.
+Execution safety measures will be enforced: kata code will run in dedicated lambda execution with a strict timeout and no network access. Inputs will be size-limited, and failures will return captured stderr to the caller. As of now, the execution sandbox is a simple subprocess with timeout in the local development server.
 
 ## 📁 Repository Layout
 
 ```text
 .
 ├─ src/
-│  ├─ api/                 # FastAPI app for local dev (parity with Lambda handlers)
-│  ├─ lambdas/             # Lambda entrypoints
-│  ├─ models/              # Pydantic/dataclass models
-│  ├─ services/            # Kata loader, runner, s3/dynamo clients
-│  └─ data/                # Seed katas metadata (json)
-├─ frontend/               # React + Vite app
+│  ├─ api/                  # FastAPI app for local dev (parity with Lambda handlers)
+│  ├─ lambdas/              # Lambda entrypoints
+│  ├─ models/               # Pydantic/dataclass models
+│  ├─ services/             # Kata loader, runner, s3/dynamo clients
+│  └─ data/                 # Seed katas metadata (json)
+├─ frontend/                # React + Vite app
 ├─ terraform/
-│  ├─ modules/             # api_gateway, lambda, dynamodb, s3, iam
-│  ├─ environments/        # dev (LocalStack), prod
-├─ .github/workflows/      # CI (lint/test) and CD (deploy) pipelines
-├─ docker/                 # Dockerfiles and compose for local stack
-├─ scripts/                # Helper scripts (publish kata, package lambda)
+│  ├─ modules/              # api_gateway, lambda, dynamodb, s3, iam
+│  ├─ environments/         # dev (LocalStack), prod
+├─ .github/workflows/       # CI (lint/test) and CD (deploy) pipelines
+├─ docker/                  # Dockerfiles and compose for local stack
+├─ scripts/                 # Helper scripts (publish kata, package lambda)
 ├─ tests/
 │  ├─ unit/
 │  ├─ integration/
 │  └─ e2e/
-├─ requirements.txt
-├─ requirements-dev.txt
-├─ pyproject.toml
-├─ .env.example
+├─ requirements.txt         # Production dependencies
+├─ requirements-dev.txt     # Development dependencies
+├─ pyproject.toml           # Black, isort, mypy configuration
+├─ .pre-commit-config.yaml  # Pre-commit hooks configuration
+├─ pytest.ini               # Pytest configuration
+├─ .coveragerc              # Coverage.py configuration
+├─ .editorconfig            # Editor configuration
+├─ .env.example             # Environment variables template
+├─ LOCAL_SETUP.md           # Local development setup instructions
 └─ README.md
 ```
 
 ## 💻 Local Development
 
 Once set up, the local development workflow will be:
+
+For extensive instructions, see [LOCAL_SETUP.md](LOCAL_SETUP.md).
 
 - Create and activate a Python virtual environment (venv):
 
@@ -160,6 +173,13 @@ Once set up, the local development workflow will be:
   docker compose -f docker/docker-compose.yml up -d
   ```
 
+- Initialize infrastructure with Terraform in the dev environment:
+
+  ```bash
+  terraform -chdir=terraform/environments/dev init
+  terraform -chdir=terraform/environments/dev apply -auto-approve
+  ```
+
 - Run FastAPI locally for rapid iteration:
 
   ```bash
@@ -183,26 +203,26 @@ The pipelines will be implemented as follows:
 
 ### Sprint 1 (Weeks 1-2): Foundation & Backend
 
-#### Phase 1: Project Foundation
+#### Phase 1: Project Foundation ✔️
 
 - Repository structure, pre-commit hooks, and quality tools configured
 - CI pipeline established with GitHub Actions (linting, type-checking, testing, coverage)
 - LocalStack + Docker Compose for local development environment
 
-#### Phase 2: Infrastructure as Code
+#### Phase 2: Infrastructure as Code ✔️
 
 - Terraform modules for DynamoDB (kata metadata), S3 (kata code), and IAM roles
 - Local dev environment configuration pointing to LocalStack
 - Infrastructure initialization scripts
 
-#### Phase 3: Backend Development
+#### Phase 3: Backend Development ✔️
 
 - Pydantic models for kata metadata and execution results
 - Service layers: DynamoDB client, S3 client, secure code execution sandbox
 - FastAPI endpoints: `/health`, `/katas`, `/katas/{id}`, `POST /katas/{id}/run`
 - Request logging and error handling middleware
 
-#### Phase 4: Testing & Quality Gates
+#### Phase 4: Testing & Quality Gates ✔️
 
 - Unit tests with pytest and coverage tracking (target ≥85%)
 - Sample kata data for validation
@@ -255,20 +275,24 @@ The pipelines will be implemented as follows:
 | 1.3 - GitHub Actions CI | 5 | ✅ Complete | CI workflow, badges, Codecov integration |
 | 1.4 - Terraform Infrastructure | 8 | ✅ Complete | DynamoDB & S3 modules completed |
 | 1.5 - Models & Services | 8 | ✅ Complete | Pydantic models and service layers in development |
-| 1.6 - FastAPI Endpoints | 8 | 🔄 In Progress | Ready to start |
-| 1.7 - Seed Data | 3 | ⬜ To Do | Depends on FastAPI & Terraform (1.4, 1.6) |
-| 1.8 - Tests (85% coverage) | 8 | 🔄 In Progress | Basic test structure, targeting 85%+ coverage |
+| 1.6 - FastAPI Endpoints | 8 | ✅ Complete | Ready to start |
+| 1.7 - Seed Data | 3 | 🔄 In Progress | Depends on FastAPI & Terraform (1.4, 1.6) |
+| 1.8 - Tests (85% coverage) | 8 | ✅ Complete | Basic test structure, targeting 85%+ coverage |
 | 1.9 - CI/CD Deployment | 5 | 🚫 Blocked | Depends on FastAPI endpoints (1.6) |
 | 1.10 - Documentation | 3 | 🔄 In Progress | API docs, LOCAL_SETUP, troubleshooting |
 
-**Sprint 1 Completion:** 60% (5 of 10 tasks complete | 3 in progress | 1 blocked)
+**Sprint 1 Completion:** 78% (7 of 10 tasks complete | 2 in progress | 1 blocked)
 
-> Tests and documentation are being counted as half done due to ongoing work.
+> Documentation is being count as almost done since this README is part of it and is being updated continuously.
 
 ### Implementation Highlights
 
+- Pytest and pre-commit enforce code quality with black, flake8, mypy.
+- Docker Compose spins up LocalStack with S3 and DynamoDB for local dev.
+- Terraform modules for infra provisioning with LocalStack support for local dev.
 - Services: DynamoDB and S3 layers implemented with robust error mapping; execution subprocess enforces timeouts and captures stdout/stderr.
-- Testing: 50+ unit tests plus dev integration suites for DynamoDB, S3, and execution pipeline:
+- API: FastAPI endpoints for health check, kata listing, kata detail, and code execution with middleware for logging and error handling.
+- Testing: 100+ unit tests plus dev integration suites for DynamoDB, S3, and execution pipeline:
   - [tests/integration/dev/test_dynamo_integration.py](tests/integration/dev/test_dynamo_integration.py)
   - [tests/integration/dev/test_s3_integration.py](tests/integration/dev/test_s3_integration.py)
   - [tests/integration/dev/test_execution_integration.py](tests/integration/dev/test_execution_integration.py)
