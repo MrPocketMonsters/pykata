@@ -241,6 +241,21 @@ Creates a separate FastAPI instance with test endpoints specifically designed to
 - Target: ≥90% for exception handlers module
 - Focus: Response structure consistency, status code accuracy, error detail exposure control
 
+### API Middleware (`unit/test_api_middleware.py`)
+
+Tests for the HTTP logging middleware that logs each incoming request and its response with latency.
+
+**Test Cases:**
+
+- `test_middleware_logs_root_request`: Verifies a request to `/` generates an INFO log containing method, path and `latency_ms=` token.
+- `test_middleware_logs_health_status`: Verifies `/health` request logs include the returned status code.
+- `test_middleware_latency_is_numeric`: Verifies the `latency_ms` value is present and parseable as a float.
+
+**Coverage Target:**
+
+- Target: ≥90% for API middleware tests
+- Focus: Request/response logging, latency formatting, status propagation
+
 ### API Health Check (`unit/test_api_health.py`)
 
 Tests for the health check endpoint in the FastAPI application (`src/api/main.py`). Validates the `GET /health` endpoint correctly reports service connectivity for DynamoDB and S3 with appropriate HTTP status codes.
@@ -377,14 +392,13 @@ The test suite achieves excellent coverage across all modules:
 | Module | Coverage | Status |
 | --- | --- | --- |
 | API Exceptions | 100% | ✅ |
-| API Health Check | 100% | ✅ |
-| API Main | 100% | ✅ |
-| Models | 100% | ✅ |
+| API Main | 94% | ✅ |
 | Config | 93% | ✅ |
 | Logger | 98% | ✅ |
-| DynamoDB Service | 95% | ✅ |
+| Models | 100% | ✅ |
+| DynamoDB Service | 96% | ✅ |
 | Execution Service | 82% | ✅ |
-| S3 Service | 98% | ✅ |
+| S3 Service | 100% | ✅ |
 | **Total** | **96%** | **✅** |
 
 **Excluded from Coverage:**
