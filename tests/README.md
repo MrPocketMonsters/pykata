@@ -14,7 +14,9 @@ Comprehensive test suite for validating the functionality of service layers, API
   - [Dynamo Service](#dynamo-service-unittest_dynamo_servicepy)
   - [S3 Service](#s3-service-unittest_s3_servicepy)
   - [API Exception Handlers](#api-exception-handlers-unittest_api_exceptionspy)
+  - [API Middleware](#api-middleware-unittest_api_middlewarepy)
   - [API Health Check](#api-health-check-unittest_api_healthpy)
+  - [Katas List Endpoint](#katas-list-endpoint-unittest_api_kataspy)
 - [Integration Tests](#integration-tests)
   - [Prerequisites](#prerequisites)
   - [Running Integration Tests](#running-integration-tests)
@@ -303,6 +305,22 @@ Uses the production FastAPI application instance imported from `src.api.main`. F
 - Target: ≥90% for health check endpoint
 - Focus: Service status combinations, response structure, status code accuracy
 
+### Katas List Endpoint (`unit/test_api_katas.py`)
+
+Tests for the `GET /katas` endpoint that lists kata metadata with pagination. Validates response schema, pagination behavior, and error handling for service failures.
+
+**Test Cases:**
+
+- **`test_returns_list_with_default_pagination`**: Verifies endpoint returns 200 with JSON array containing metadata objects (id, title, description, tags, difficulty) and excludes `s3_key` field
+- **`test_limit_and_offset_paginate_correctly`**: Validates custom `limit` and `offset` query params correctly slice and paginate results
+- **`test_response_schema_contains_expected_fields_and_no_code`**: Confirms response contains all required metadata fields and `s3_key` is not present
+- **`test_dynamo_errors_map_to_http_errors`**: Tests DynamoDB service errors return HTTP 500 with generic error message without exposing internal exception details
+
+**Coverage Target:**
+
+- Target: ≥90% for katas list endpoint
+- Focus: Pagination logic, response filtering, error mapping, security (no data leakage)
+
 ## Integration Tests
 
 Integration tests exercise real service interactions against a configured environment.
@@ -392,14 +410,14 @@ The test suite achieves excellent coverage across all modules:
 | Module | Coverage | Status |
 | --- | --- | --- |
 | API Exceptions | 100% | ✅ |
-| API Main | 94% | ✅ |
+| API Main | 91% | ✅ |
 | Config | 93% | ✅ |
 | Logger | 98% | ✅ |
 | Models | 100% | ✅ |
 | DynamoDB Service | 96% | ✅ |
 | Execution Service | 82% | ✅ |
 | S3 Service | 100% | ✅ |
-| **Total** | **96%** | **✅** |
+| **Total** | **95%** | **✅** |
 
 **Excluded from Coverage:**
 
@@ -409,4 +427,4 @@ The test suite achieves excellent coverage across all modules:
 
 - Minimum coverage per module: ≥80%
 - Overall coverage target: ≥85%
-- **Current achievement: 96% overall** ✅
+- **Current achievement: 95% overall** ✅

@@ -1,6 +1,8 @@
 """Main API module for the FastAPI application."""
 
-from fastapi import FastAPI, status, Request
+from typing import Annotated
+
+from fastapi import FastAPI, status, Request, HTTPException, Query
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from time import time
@@ -12,7 +14,12 @@ from src.api.exceptions import (
     request_timeout_exception_handler,
     global_exception_handler,
 )
-from src.services.dynamo_service import check_health as check_dynamo_health
+from src.services.dynamo_service import (
+    check_health as check_dynamo_health,
+    list_katas as dynamo_list_katas,
+    DynamoServiceError,
+    TableNotFoundError,
+)
 from src.services.s3_service import check_health as check_s3_health
 
 app = FastAPI()
@@ -93,3 +100,38 @@ async def root():
         dict: A simple hello world message.
     """
     return {"message": "API is running"}
+
+
+@app.get("/katas")
+async def get_katas(
+    limit: Annotated[int, Query(ge=0)] = 20,
+    offset: Annotated[int, Query(ge=0)] = 0,
+):
+    """
+    List kata metadata with simple pagination.
+
+    - Query params: `limit` (default 20), `offset` (default 0)
+    - Returns: JSON list of kata metadata objects without code content (`s3_key` removed)
+    """
+    try:
+        katas = dynamo_list_katas(limit=limit, offset=offset)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    except (TableNotFoundError, DynamoServiceError) as e:
+        raise Exception("DynamoDB service error") from e
+    except Exception as e:
+        raise Exception("Unexpected error occurred") from e
+
+    # Convert to simple dicts and exclude code storage key to avoid exposing code
+    result = []
+    for k in katas:
+        item = {
+            "id": k.id,
+            "title": k.title,
+            "description": k.description,
+            "tags": k.tags,
+            "difficulty": k.difficulty,
+        }
+        result.append(item)
+
+    return result
