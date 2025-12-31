@@ -14,6 +14,7 @@ Contains the core application code organized by concern:
   - [Main Application](#main-application-apimainpy)
   - [Health Check Service](#health-check-service-get-health)
   - [Katas List Endpoint](#katas-list-endpoint-get-katas)
+  - [Single Kata Endpoint](#single-kata-endpoint-get-kataskata_id)
   - [Exception Handlers](#exception-handlers-apiexceptionspy)
 - [Configuration](#configuration-configpy)
 - [Logger](#logger-loggerpy)
@@ -80,6 +81,90 @@ $ curl http://localhost:8000/health
 {"status":"healthy","services":{"dynamodb":true,"s3":true}}
 ```
 
+### Katas List Endpoint (`GET /katas`)
+
+Provides paginated listing of kata metadata without code content. Returns metadata records only — code retrieval is a separate operation.
+
+**Query Parameters:**
+
+- `limit` (int, default: 20): Maximum number of items to return
+- `offset` (int, default: 0): Starting offset for pagination
+
+**Response:**
+
+- **Status 200** (Success): JSON array of kata metadata objects
+
+  ```json
+  [
+    {
+      "id": "kata-123",
+      "title": "Reverse String",
+      "description": "Reverse a given string",
+      "tags": ["strings", "algorithms"],
+      "difficulty": "beginner"
+    }
+  ]
+  ```
+
+  Note: The `s3_key`, `sample_input`, and `sample_output` fields are intentionally excluded to reduce payload size.
+
+**Error Responses:**
+
+- **400 Bad Request**: Invalid query parameters (negative limit/offset)
+- **500 Internal Server Error**: DynamoDB service errors (table unavailable, client errors)
+
+**How It Works:**
+
+The endpoint invokes `list_katas(limit, offset)` from the DynamoDB service to scan and paginate metadata records. Each record is filtered to exclude the `s3_key`, `sample_input`, and `sample_output` fields before returning, minimizing response size for large lists.
+
+**Usage Example:**
+
+```bash
+$ curl "http://localhost:8000/katas?limit=10&offset=0"
+[{"id":"kata-1","title":"Hello World",...}]
+```
+
+### Single Kata Endpoint (`GET /katas/{kata_id}`)
+
+Provides retrieval of a single kata's metadata by its unique identifier without code content. Code retrieval is a separate operation.
+
+**Path Parameters:**
+
+- `kata_id` (str): Unique identifier of the kata to retrieve
+
+**Response:**
+
+- **Status 200** (Success): JSON object of kata metadata
+
+  ```json
+  {
+    "id": "kata-123",
+    "title": "Reverse String",
+    "description": "Reverse a given string",
+    "tags": ["strings", "algorithms"],
+    "difficulty": "beginner",
+    "s3_key": "katas/reverse_string.py",
+    "sample_input": "hello",
+    "sample_output": "olleh"
+  }
+  ```
+
+**Error Responses:**
+
+- **404 Not Found**: Kata with specified `kata_id` does not exist
+- **500 Internal Server Error**: DynamoDB service errors (table unavailable, client errors)
+
+**How It Works:**
+
+The endpoint invokes `get_kata(kata_id)` from the DynamoDB service to fetch the metadata record. If found, it returns the full metadata including `s3_key`, `sample_input`, and `sample_output`. If not found, it raises a through the 404 handler via `ItemNotFoundError`.
+
+**Usage Example:**
+
+```bash
+$ curl "http://localhost:8000/katas/kata-123"
+{"id":"kata-123","title":"Reverse String",...}
+```
+
 ### Exception Handlers (`api/exceptions.py`)
 
 Provides centralized exception handling for the FastAPI application with standardized JSON responses and comprehensive logging.
@@ -134,49 +219,6 @@ Catches all unhandled exceptions (500 Internal Server Error) as a safety net.
 3. **Don't catch everything**: Let unexpected exceptions bubble up to the 500 handler for proper logging
 4. **Use appropriate status codes**: 400 for client errors, 408 for timeouts, 500 for server errors
 5. **Never expose sensitive data**: The 500 handler deliberately hides exception details from clients
-
-### Katas List Endpoint (`GET /katas`)
-
-Provides paginated listing of kata metadata without code content. Returns metadata records only — code retrieval is a separate operation.
-
-**Query Parameters:**
-
-- `limit` (int, default: 20): Maximum number of items to return
-- `offset` (int, default: 0): Starting offset for pagination
-
-**Response:**
-
-- **Status 200** (Success): JSON array of kata metadata objects
-
-  ```json
-  [
-    {
-      "id": "kata-123",
-      "title": "Reverse String",
-      "description": "Reverse a given string",
-      "tags": ["strings", "algorithms"],
-      "difficulty": "beginner"
-    }
-  ]
-  ```
-
-  Note: The `s3_key` field is intentionally excluded to avoid exposing code storage locations.
-
-**Error Responses:**
-
-- **400 Bad Request**: Invalid query parameters (negative limit/offset)
-- **500 Internal Server Error**: DynamoDB service errors (table unavailable, client errors)
-
-**How It Works:**
-
-The endpoint invokes `list_katas(limit, offset)` from the DynamoDB service to scan and paginate metadata records. Each record is filtered to exclude the `s3_key` field before returning to the client, ensuring code content remains inaccessible through this endpoint.
-
-**Usage Example:**
-
-```bash
-$ curl "http://localhost:8000/katas?limit=10&offset=0"
-[{"id":"kata-1","title":"Hello World",...}]
-```
 
 ## Configuration (`config.py`)
 

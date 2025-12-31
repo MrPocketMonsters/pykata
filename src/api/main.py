@@ -17,8 +17,10 @@ from src.api.exceptions import (
 from src.services.dynamo_service import (
     check_health as check_dynamo_health,
     list_katas as dynamo_list_katas,
+    get_kata as dynamo_get_kata,
     DynamoServiceError,
     TableNotFoundError,
+    ItemNotFoundError,
 )
 from src.services.s3_service import check_health as check_s3_health
 
@@ -57,6 +59,7 @@ async def http_logging_middleware(request: Request, call_next):
 # Register global exception handlers
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(404, not_found_exception_handler)
+app.add_exception_handler(ItemNotFoundError, not_found_exception_handler)
 app.add_exception_handler(408, request_timeout_exception_handler)
 app.add_exception_handler(Exception, global_exception_handler)
 
@@ -134,4 +137,35 @@ async def get_katas(
         }
         result.append(item)
 
+    return result
+
+
+@app.get("/katas/{kata_id}")
+async def get_single_kata(kata_id: str):
+    """
+    Retrieve a single kata metadata by its ID.
+
+    - Path param: `kata_id`
+    - Returns: JSON object of kata metadata without code content (`s3_key` removed)
+    """
+
+    try:
+        kata = dynamo_get_kata(kata_id=kata_id)
+    except ItemNotFoundError as e:
+        raise ItemNotFoundError(f"Kata with ID '{kata_id}' not found.") from e
+    except (TableNotFoundError, DynamoServiceError) as e:
+        raise Exception("DynamoDB service error") from e
+    except Exception as e:
+        raise Exception("Unexpected error occurred") from e
+
+    result = {
+        "id": kata.id,
+        "title": kata.title,
+        "description": kata.description,
+        "tags": kata.tags,
+        "difficulty": kata.difficulty,
+        "s3_key": kata.s3_key,
+        "sample_input": kata.sample_input,
+        "sample_output": kata.sample_output,
+    }
     return result

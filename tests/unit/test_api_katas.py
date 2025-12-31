@@ -100,3 +100,16 @@ class TestListKatasEndpoint:
         assert body2.get("detail") == "Internal Server Error"
         assert body2.get("status_code") == 500
         assert "missing" not in str(body2)
+
+    def test_exceptions_do_not_expose_internal_details(self, monkeypatch):
+        monkeypatch.setattr(
+            "src.api.main.dynamo_list_katas",
+            lambda limit, offset: (_ for _ in ()).throw(Exception("internal error")),
+        )
+
+        resp = client.get("/katas")
+        assert resp.status_code == 500
+        body = resp.json()
+        assert body.get("detail") == "Internal Server Error"
+        assert body.get("status_code") == 500
+        assert "internal error" not in str(body)

@@ -17,6 +17,7 @@ Comprehensive test suite for validating the functionality of service layers, API
   - [API Middleware](#api-middleware-unittest_api_middlewarepy)
   - [API Health Check](#api-health-check-unittest_api_healthpy)
   - [Katas List Endpoint](#katas-list-endpoint-unittest_api_kataspy)
+  - [Single Kata Endpoint](#single-kata-endpoint-unittest_api_single_katapy)
 - [Integration Tests](#integration-tests)
   - [Prerequisites](#prerequisites)
   - [Running Integration Tests](#running-integration-tests)
@@ -319,7 +320,23 @@ Tests for the `GET /katas` endpoint that lists kata metadata with pagination. Va
 **Coverage Target:**
 
 - Target: ≥90% for katas list endpoint
-- Focus: Pagination logic, response filtering, error mapping, security (no data leakage)
+- Focus: Pagination logic, response filtering, error mapping
+
+### Single Kata Endpoint (`unit/test_api_single_kata.py`)
+
+Tests for the `GET /katas/{kata_id}` endpoint that retrieves metadata for a single kata by ID. Validates response schema, error handling for not found and service failures.
+
+**Test Cases:**
+
+- **`test_return_kata_correctly`**: Verifies endpoint returns 200 with JSON object containing metadata fields (id, title, description, tags, difficulty, s3_key, sample_input, sample_output).
+- **`test_response_schema_contains_expected_fields`**: Confirms response contains all required metadata fields.
+- **`test_dynamo_errors_map_to_http_errors`**: Tests DynamoDB service errors return HTTP 500 with generic error message without exposing internal exception details.
+- **`test_item_not_found_maps_to_404`**: Specifically tests that when a kata ID does not exist, the endpoint returns HTTP 404 Not Found with appropriate error message.
+
+**Coverage Target:**
+
+- Target: ≥90% for single kata endpoint
+- Focus: Response structure, error mapping, not found handling
 
 ## Integration Tests
 
@@ -410,14 +427,14 @@ The test suite achieves excellent coverage across all modules:
 | Module | Coverage | Status |
 | --- | --- | --- |
 | API Exceptions | 100% | ✅ |
-| API Main | 91% | ✅ |
+| API Main | 96% | ✅ |
 | Config | 93% | ✅ |
 | Logger | 98% | ✅ |
 | Models | 100% | ✅ |
 | DynamoDB Service | 96% | ✅ |
 | Execution Service | 82% | ✅ |
 | S3 Service | 100% | ✅ |
-| **Total** | **95%** | **✅** |
+| **Total** | **96%** | **✅** |
 
 **Excluded from Coverage:**
 
