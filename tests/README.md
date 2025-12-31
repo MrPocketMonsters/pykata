@@ -18,6 +18,7 @@ Comprehensive test suite for validating the functionality of service layers, API
   - [API Health Check](#api-health-check-unittest_api_healthpy)
   - [Katas List Endpoint](#katas-list-endpoint-unittest_api_kataspy)
   - [Single Kata Endpoint](#single-kata-endpoint-unittest_api_single_katapy)
+  - [Kata Execution Endpoint](#kata-execution-endpoint-unittest_api_mainpy)
 - [Integration Tests](#integration-tests)
   - [Prerequisites](#prerequisites)
   - [Running Integration Tests](#running-integration-tests)
@@ -342,6 +343,27 @@ Tests for the `GET /katas/{kata_id}` endpoint that retrieves metadata for a sing
 - Target: ≥90% for single kata endpoint
 - Focus: Response structure, error mapping, not found handling
 
+### Kata Execution Endpoint (`unit/test_api_main.py`)
+
+Tests for the `POST /katas/run` endpoint that executes a kata with provided input data. Validates execution result schema, error handling for service failures, and timeout behavior.
+
+**Test Cases:**
+
+- **`test_code_execution_returns_expected_result`**: Verifies endpoint returns 200 with JSON object containing execution result fields (success, stdout, stderr, execution_time_ms) matching expected output for given input.
+- **`test_bad_request_on_invalid_payload`**: Validates that invalid request payloads (missing fields, wrong types) return HTTP 400 Bad Request with generic error messages.
+- **`test_timeout_limits_are_enforced`**: Tests that the timeout param is converted to a value within 0 and EXECUTION_TIMEOUT.
+- **`test_execution_timeout_maps_to_408`**: Verifies that execution timeouts return HTTP 408 Request Timeout with generic error message.
+- **`test_dynamo_errors_map_to_http_errors`**: Tests DynamoDB service errors return HTTP 500 with generic error message without exposing internal exception details.
+- **`test_dynamo_item_not_found_maps_to_404`**: Specifically tests that when a kata ID does not exist, the endpoint returns HTTP 404 Not Found with generic error message.
+- **`test_s3_errors_map_to_http_errors`**: Tests S3 service errors return HTTP 500 with generic error message without exposing internal exception details.
+- **`test_s3_object_not_found_maps_to_404`**: Specifically tests that when the kata code is missing in S3, the endpoint returns HTTP 404 Not Found with generic error message.
+- **`test_exceptions_do_not_expose_internal_details`**: Validates that generic exceptions from either DynamoDB, S3 or execution services result in HTTP 500 responses without leaking sensitive error information.
+
+**Coverage Target:**
+
+- Target: ≥90% for kata execution endpoint
+- Focus: Execution result validation, error mapping, timeout handling
+
 ## Integration Tests
 
 Integration tests exercise real service interactions against a configured environment.
@@ -431,7 +453,7 @@ The test suite achieves excellent coverage across all modules:
 | Module | Coverage | Status |
 | --- | --- | --- |
 | API Exceptions | 100% | ✅ |
-| API Main | 96% | ✅ |
+| API Main | 97% | ✅ |
 | Config | 93% | ✅ |
 | Logger | 98% | ✅ |
 | Models | 100% | ✅ |

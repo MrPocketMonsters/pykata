@@ -15,6 +15,7 @@ Contains the core application code organized by concern:
   - [Health Check Service](#health-check-service-get-health)
   - [Katas List Endpoint](#katas-list-endpoint-get-katas)
   - [Single Kata Endpoint](#single-kata-endpoint-get-kataskata_id)
+  - [Kata Execution Endpoint](#kata-execution-endpoint-post-katasrun)
   - [Exception Handlers](#exception-handlers-apiexceptionspy)
 - [Configuration](#configuration-configpy)
 - [Logger](#logger-loggerpy)
@@ -164,6 +165,70 @@ The endpoint invokes `get_kata(kata_id)` from the DynamoDB service to fetch the 
 $ curl "http://localhost:8000/katas/kata-123"
 {"id":"kata-123","title":"Reverse String",...}
 ```
+
+### Kata Execution Endpoint (`POST /katas/run`)
+
+Provides execution of a kata associated to a user-submitted kata ID, input data and execution timeout, returning the execution result including output, errors, and execution time.
+
+**Request Body:**
+
+```json
+{
+  "kata_id": "kata-123",
+  "user_input": "sample input data",
+  "max_timeout": 10 // seconds
+}
+```
+
+**Response:**
+
+- **Status 200** (Success): JSON object with execution result
+
+  Correct execution:
+
+  ```json
+  {
+    "success": true,
+    "stdout": "output from code",
+    "stderr": "",
+    "execution_time_ms": 150 // milliseconds
+  }
+  ```
+
+  Execution with errors:
+
+  ```json
+  {
+    "success": false,
+    "stdout": "output from code before error",
+    "stderr": "error message from code",
+    "execution_time_ms": 50 // milliseconds
+  }
+  ```
+
+**Error Responses:**
+
+- **404 Not Found**: Kata with specified `kata_id` does not exist
+- **500 Internal Server Error**: DynamoDB, S3 service errors (table/bucket unavailable, client errors) or execution service failures.
+
+**How It Works:**
+
+The endpoint accepts a `KataExecution` request body containing the `kata_id`, `user_input`, and optional `max_timeout`. It first retrieves the kata metadata using `get_kata(kata_id)` from the DynamoDB service. If found, it downloads the kata code using `download_kata_code(s3_key)` from the S3 service. Finally, it invokes `execute_kata(code, user_input, timeout)` from the execution service to run the code with the provided input and timeout. The execution result, including success status, stdout, stderr, and execution time, is returned in the response.
+
+**Usage Example:**
+
+```bash
+$ curl -X POST "http://localhost:8000/katas/run" \
+  -H "Content-Type: application/json" \
+  -d '{"kata_id": "kata-123", "user_input": "hello"}'
+{"success":true,"stdout":"olleh","stderr":"","execution_time_ms":120}
+```
+
+**Notes:**
+
+- The `max_timeout` field is optional; if not provided, a default timeout from configuration is used.
+- If the `max_timeout` in negative or exceeds allowed limits, it is clamped to valid values.
+- It is not possible to run malicious code that affects the server due to the private storage code retrieval. If user-submitted code is allowed in the future, additional sandboxing and security measures must be implemented.
 
 ### Exception Handlers (`api/exceptions.py`)
 

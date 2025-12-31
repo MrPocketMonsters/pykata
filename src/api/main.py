@@ -7,7 +7,9 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from time import time
 
+from src.config import settings
 from src.logger import get_logger
+from src.models.kata import KataMetadata, KataExecution, ExecutionResult
 from src.api.exceptions import (
     validation_exception_handler,
     not_found_exception_handler,
@@ -29,11 +31,60 @@ from src.services.s3_service import (
     BucketNotFoundError,
     ObjectNotFoundError,
 )
+from src.services.execution_service import execute_kata_code as execute_kata
 
 app = FastAPI()
 
 # HTTP request/response logging middleware (1.6.6)
 logger = get_logger(__name__)
+
+
+def __fetch_kata_metadata(kata_id: str) -> KataMetadata:
+    """
+    Helper function to fetch kata metadata from DynamoDB.
+    Args:
+        kata_id (str): The unique identifier of the kata.
+    Returns:
+        KataMetadata: The metadata of the kata.
+    Raises:
+        ItemNotFoundError: If the kata with the given ID does not exist.
+        Exception: For other unexpected errors.
+    """
+    try:
+        kata_metadata: KataMetadata = dynamo_get_kata(kata_id=kata_id)
+    except ItemNotFoundError as e:
+        raise ItemNotFoundError(f"Kata with ID '{kata_id}' not found.") from e
+    except (TableNotFoundError, DynamoServiceError) as e:
+        raise Exception("DynamoDB service error") from e
+    except Exception as e:
+        raise Exception("Unexpected error occurred") from e
+
+    return kata_metadata
+
+
+def __fetch_kata_code(s3_key: str) -> str:
+    """
+    Helper function to fetch kata code from S3.
+    Args:
+        s3_key (str): The S3 key where the kata code is stored.
+    Returns:
+        str: The code content of the kata.
+    Raises:
+        ObjectNotFoundError: If the kata code does not exist in S3.
+        Exception: For other unexpected errors.
+    """
+    try:
+        kata_code: str = s3_get_kata_code(s3_key=s3_key)
+    except ObjectNotFoundError as e:
+        raise ObjectNotFoundError(
+            f"Kata code for key '{s3_key}' not found in S3."
+        ) from e
+    except (BucketNotFoundError, S3ServiceError) as e:
+        raise Exception("S3 service error") from e
+    except Exception as e:
+        raise Exception("Unexpected error occurred") from e
+
+    return kata_code
 
 
 @app.middleware("http")
@@ -157,27 +208,8 @@ async def get_single_kata(kata_id: str):
     - Returns: JSON object of kata metadata without code content (`s3_key` removed)
     """
 
-    # Fetch metadata from DynamoDB
-    try:
-        kata_metadata = dynamo_get_kata(kata_id=kata_id)
-    except ItemNotFoundError as e:
-        raise ItemNotFoundError(f"Kata with ID '{kata_id}' not found.") from e
-    except (TableNotFoundError, DynamoServiceError) as e:
-        raise Exception("DynamoDB service error") from e
-    except Exception as e:
-        raise Exception("Unexpected error occurred") from e
-
-    # Fetch code from S3
-    try:
-        kata_code = s3_get_kata_code(s3_key=kata_metadata.s3_key)
-    except ObjectNotFoundError as e:
-        raise ObjectNotFoundError(
-            f"Kata code for ID '{kata_id}' not found in S3."
-        ) from e
-    except (BucketNotFoundError, S3ServiceError) as e:
-        raise Exception("S3 service error") from e
-    except Exception as e:
-        raise Exception("Unexpected error occurred") from e
+    kata_metadata = __fetch_kata_metadata(kata_id=kata_id)
+    kata_code = __fetch_kata_code(s3_key=kata_metadata.s3_key)
 
     result = {
         "id": kata_metadata.id,
@@ -190,3 +222,37 @@ async def get_single_kata(kata_id: str):
         "sample_output": kata_metadata.sample_output,
     }
     return result
+
+
+@app.post("/katas/run")
+async def run_kata(KataExec: KataExecution) -> ExecutionResult:
+    """
+    Execute a kata with provided input data.
+
+    - Body: `KataExecution` model with `kata_id`, `user_input`, and optional `max_timeout`
+    - Returns: `ExecutionResult` model with execution outcome and outputs
+    """
+
+    # Fetch kata metadata and code
+    kata_metadata = __fetch_kata_metadata(kata_id=KataExec.kata_id)
+    kata_code = __fetch_kata_code(s3_key=kata_metadata.s3_key)
+
+    # Determine execution timeout
+    timeout = max(0, KataExec.max_timeout or 0)
+    timeout = min(timeout, settings.EXECUTION_TIMEOUT)
+
+    # Execute kata code with user input and timeout
+    execution_result: ExecutionResult = execute_kata(
+        kata_code, KataExec.user_input, timeout
+    )
+
+    if (
+        execution_result.success is False
+        and execution_result.stderr == "Execution timed out."
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_408_REQUEST_TIMEOUT,
+            detail="Kata execution timed out.",
+        )
+
+    return execution_result
