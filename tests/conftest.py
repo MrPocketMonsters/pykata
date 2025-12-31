@@ -230,3 +230,69 @@ def mock_s3_health_down(monkeypatch):
         "src.api.main.check_s3_health",
         lambda: False,
     )
+
+
+# ============================================================================
+# Fixtures for API endpoint tests
+# ============================================================================
+
+
+@pytest.fixture
+def kata_metadata_factory():
+    """Factory fixture to create KataMetadata instances for testing."""
+    from src.models.kata import KataMetadata
+
+    def _make_kata(idx: int) -> KataMetadata:
+        return KataMetadata(
+            id=f"kata-{idx}",
+            title=f"Title {idx}",
+            description=f"Desc {idx}",
+            tags=["arrays", "strings"],
+            difficulty="beginner",
+            s3_key=f"katas/kata-{idx}.py",
+            sample_input="",
+            sample_output="",
+        )
+
+    return _make_kata
+
+
+@pytest.fixture
+def kata_metadata():
+    """Fixture providing a default kata metadata instance."""
+    from src.models.kata import KataMetadata
+
+    return KataMetadata(
+        id="kata-1",
+        title="Title 1",
+        description="Desc 1",
+        tags=["arrays", "strings"],
+        difficulty="beginner",
+        s3_key="katas/kata-1.py",
+        sample_input="",
+        sample_output="",
+    )
+
+
+@pytest.fixture
+def kata_execution():
+    """Fixture providing a default kata execution request."""
+    from src.models.kata import KataExecution
+
+    return KataExecution(kata_id="kata-1", user_input="Expected output", max_timeout=3)
+
+
+@pytest.fixture
+def execution_result():
+    """Fixture providing a default execution result."""
+    from src.models.kata import ExecutionResult
+
+    return ExecutionResult(
+        success=True, stdout="Expected output", stderr="", execution_time_ms=123
+    )
+
+
+@pytest.fixture
+def kata_code():
+    """Fixture providing default kata code."""
+    return "print(input())"

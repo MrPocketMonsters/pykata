@@ -3,28 +3,19 @@
 from fastapi.testclient import TestClient
 
 from src.api.main import app
-from src.models.kata import KataMetadata
 from src.services.dynamo_service import DynamoServiceError, TableNotFoundError
 
 
 client = TestClient(app, raise_server_exceptions=False)
 
 
-class TestListKatasEndpoint:
-    def _make_kata(self, idx: int) -> KataMetadata:
-        return KataMetadata(
-            id=f"kata-{idx}",
-            title=f"Title {idx}",
-            description=f"Desc {idx}",
-            tags=["arrays", "strings"],
-            difficulty="beginner",
-            s3_key=f"katas/kata-{idx}.py",
-            sample_input="",
-            sample_output="",
-        )
+class TestListKatasEndpointResponses:
+    """Tests for GET /katas endpoint successful responses."""
 
-    def test_returns_list_with_default_pagination(self, monkeypatch):
-        sample = [self._make_kata(i) for i in range(3)]
+    def test_returns_list_with_default_pagination(
+        self, monkeypatch, kata_metadata_factory
+    ):
+        sample = [kata_metadata_factory(i) for i in range(3)]
 
         monkeypatch.setattr(
             "src.api.main.dynamo_list_katas", lambda limit, offset: sample
@@ -45,8 +36,10 @@ class TestListKatasEndpoint:
             # code storage key must not be exposed
             assert "s3_key" not in item
 
-    def test_limit_and_offset_paginate_correctly(self, monkeypatch):
-        sample = [self._make_kata(i) for i in range(5)]
+    def test_limit_and_offset_paginate_correctly(
+        self, monkeypatch, kata_metadata_factory
+    ):
+        sample = [kata_metadata_factory(i) for i in range(5)]
 
         def stub(limit, offset):
             # emulate service behavior: return slice
@@ -60,8 +53,10 @@ class TestListKatasEndpoint:
         assert len(data) == 2
         assert data[0]["id"] == "kata-1"
 
-    def test_response_schema_contains_expected_fields_and_no_code(self, monkeypatch):
-        kata = self._make_kata(42)
+    def test_response_schema_contains_expected_fields_and_no_code(
+        self, monkeypatch, kata_metadata_factory
+    ):
+        kata = kata_metadata_factory(42)
         monkeypatch.setattr(
             "src.api.main.dynamo_list_katas", lambda limit, offset: [kata]
         )
@@ -72,6 +67,10 @@ class TestListKatasEndpoint:
         expected = {"id", "title", "description", "tags", "difficulty"}
         assert expected.issubset(set(item.keys()))
         assert "s3_key" not in item
+
+
+class TestListKatasEndpointExceptions:
+    """Tests for GET /katas endpoint error handling."""
 
     def test_dynamo_errors_map_to_http_errors(self, monkeypatch):
         monkeypatch.setattr(
