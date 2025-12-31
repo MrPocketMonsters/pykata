@@ -22,7 +22,13 @@ from src.services.dynamo_service import (
     TableNotFoundError,
     ItemNotFoundError,
 )
-from src.services.s3_service import check_health as check_s3_health
+from src.services.s3_service import (
+    check_health as check_s3_health,
+    download_kata_code as s3_get_kata_code,
+    S3ServiceError,
+    BucketNotFoundError,
+    ObjectNotFoundError,
+)
 
 app = FastAPI()
 
@@ -58,10 +64,12 @@ async def http_logging_middleware(request: Request, call_next):
 
 # Register global exception handlers
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
-app.add_exception_handler(404, not_found_exception_handler)
-app.add_exception_handler(ItemNotFoundError, not_found_exception_handler)
 app.add_exception_handler(408, request_timeout_exception_handler)
 app.add_exception_handler(Exception, global_exception_handler)
+
+# Register not found exception handlers
+for error in [404, ItemNotFoundError, ObjectNotFoundError]:
+    app.add_exception_handler(error, not_found_exception_handler)
 
 
 @app.get("/health")
@@ -149,8 +157,9 @@ async def get_single_kata(kata_id: str):
     - Returns: JSON object of kata metadata without code content (`s3_key` removed)
     """
 
+    # Fetch metadata from DynamoDB
     try:
-        kata = dynamo_get_kata(kata_id=kata_id)
+        kata_metadata = dynamo_get_kata(kata_id=kata_id)
     except ItemNotFoundError as e:
         raise ItemNotFoundError(f"Kata with ID '{kata_id}' not found.") from e
     except (TableNotFoundError, DynamoServiceError) as e:
@@ -158,14 +167,26 @@ async def get_single_kata(kata_id: str):
     except Exception as e:
         raise Exception("Unexpected error occurred") from e
 
+    # Fetch code from S3
+    try:
+        kata_code = s3_get_kata_code(s3_key=kata_metadata.s3_key)
+    except ObjectNotFoundError as e:
+        raise ObjectNotFoundError(
+            f"Kata code for ID '{kata_id}' not found in S3."
+        ) from e
+    except (BucketNotFoundError, S3ServiceError) as e:
+        raise Exception("S3 service error") from e
+    except Exception as e:
+        raise Exception("Unexpected error occurred") from e
+
     result = {
-        "id": kata.id,
-        "title": kata.title,
-        "description": kata.description,
-        "tags": kata.tags,
-        "difficulty": kata.difficulty,
-        "s3_key": kata.s3_key,
-        "sample_input": kata.sample_input,
-        "sample_output": kata.sample_output,
+        "id": kata_metadata.id,
+        "title": kata_metadata.title,
+        "description": kata_metadata.description,
+        "tags": kata_metadata.tags,
+        "difficulty": kata_metadata.difficulty,
+        "code": kata_code,
+        "sample_input": kata_metadata.sample_input,
+        "sample_output": kata_metadata.sample_output,
     }
     return result

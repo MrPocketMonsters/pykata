@@ -106,7 +106,7 @@ Provides paginated listing of kata metadata without code content. Returns metada
   ]
   ```
 
-  Note: The `s3_key`, `sample_input`, and `sample_output` fields are intentionally excluded to reduce payload size.
+  Note: The `s3_key`, `sample_input`, and `sample_output` fields are intentionally excluded to reduce payload size and avoid exposing code storage locations.
 
 **Error Responses:**
 
@@ -115,7 +115,7 @@ Provides paginated listing of kata metadata without code content. Returns metada
 
 **How It Works:**
 
-The endpoint invokes `list_katas(limit, offset)` from the DynamoDB service to scan and paginate metadata records. Each record is filtered to exclude the `s3_key`, `sample_input`, and `sample_output` fields before returning, minimizing response size for large lists.
+The endpoint invokes `list_katas(limit, offset)` from the DynamoDB service to scan and paginate metadata records. Each record is filtered to exclude the `s3_key` field before returning to the client, ensuring code content remains inaccessible through this endpoint.
 
 **Usage Example:**
 
@@ -126,7 +126,7 @@ $ curl "http://localhost:8000/katas?limit=10&offset=0"
 
 ### Single Kata Endpoint (`GET /katas/{kata_id}`)
 
-Provides retrieval of a single kata's metadata by its unique identifier without code content. Code retrieval is a separate operation.
+Provides retrieval of a single kata's metadata by its unique identifier with code content and sample I/O included.
 
 **Path Parameters:**
 
@@ -143,7 +143,7 @@ Provides retrieval of a single kata's metadata by its unique identifier without 
     "description": "Reverse a given string",
     "tags": ["strings", "algorithms"],
     "difficulty": "beginner",
-    "s3_key": "katas/reverse_string.py",
+    "code": "print(input()[::-1])",
     "sample_input": "hello",
     "sample_output": "olleh"
   }
@@ -156,7 +156,7 @@ Provides retrieval of a single kata's metadata by its unique identifier without 
 
 **How It Works:**
 
-The endpoint invokes `get_kata(kata_id)` from the DynamoDB service to fetch the metadata record. If found, it returns the full metadata including `s3_key`, `sample_input`, and `sample_output`. If not found, it raises a through the 404 handler via `ItemNotFoundError`.
+The endpoint invokes `get_kata(kata_id)` from the DynamoDB service to fetch the metadata record. If found, it stores the metadata and then uses the `s3_key` field invoke `download_kata_code(s3_key)` from the S3 service to retrieve the actual code content. The final response includes all metadata fields plus the retrieved code except for `s3_key` to avoid exposing code storage locations.
 
 **Usage Example:**
 

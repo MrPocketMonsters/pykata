@@ -329,9 +329,13 @@ Tests for the `GET /katas/{kata_id}` endpoint that retrieves metadata for a sing
 **Test Cases:**
 
 - **`test_return_kata_correctly`**: Verifies endpoint returns 200 with JSON object containing metadata fields (id, title, description, tags, difficulty, s3_key, sample_input, sample_output).
-- **`test_response_schema_contains_expected_fields`**: Confirms response contains all required metadata fields.
+- **`test_response_schema_contains_expected_fields`**: Confirms response contains all required metadata fields and excludes `s3_key`.
+- **`test_code_content_is_returned`**: Validates that the `code` field is included in the response and matches expected content from S3.
 - **`test_dynamo_errors_map_to_http_errors`**: Tests DynamoDB service errors return HTTP 500 with generic error message without exposing internal exception details.
-- **`test_item_not_found_maps_to_404`**: Specifically tests that when a kata ID does not exist, the endpoint returns HTTP 404 Not Found with appropriate error message.
+- **`test_dynamo_item_not_found_maps_to_404`**: Specifically tests that when a kata ID does not exist, the endpoint returns HTTP 404 Not Found with generic error message.
+- **`test_s3_errors_map_to_http_errors`**: Tests S3 service errors return HTTP 500 with generic error message without exposing internal exception details.
+- **`test_s3_object_not_found_maps_to_404`**: Specifically tests that when the kata code is missing in S3, the endpoint returns HTTP 404 Not Found with generic error message.
+- **`test_exceptions_do_not_expose_internal_details`**: Validates that generic exceptions from either DynamoDB or S3 services result in HTTP 500 responses without leaking sensitive error information.
 
 **Coverage Target:**
 
