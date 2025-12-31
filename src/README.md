@@ -8,6 +8,82 @@ Contains the core application code organized by concern:
 - **services/** - Business logic and external service integrations
 - **data/** - Seed data and sample katas
 
+## API (`api/`)
+
+### Main Application (`api/main.py`)
+
+The FastAPI application entrypoint that configures global exception handlers and defines API endpoints.
+
+**How It Works:**
+
+The application bootstraps by registering global exception handlers for consistent error responses across all endpoints:
+
+**Registered Handlers:**
+
+- `RequestValidationError` → 400 Bad Request with validation details
+- `404` → Not Found with requested path
+- `408` → Request Timeout with requested path
+- `Exception` → 500 Internal Server Error with generic message
+
+### Exception Handlers (`api/exceptions.py`)
+
+Provides centralized exception handling for the FastAPI application with standardized JSON responses and comprehensive logging.
+
+**How It Works:**
+
+Exception handlers are registered globally and intercept errors before they reach the client. Each handler returns a consistent JSON structure:
+
+**Response Structure:**
+
+All exception handlers return JSON with the following fields:
+
+- **`detail`**: Human-readable error message or description
+- **`status_code`**: HTTP status code (400, 404, 408, 500)
+- **`errors`** (400 only): List of validation errors with field details
+- **`path`** (404, 408 only): The requested path that triggered the error
+
+#### Available Handlers
+
+**`validation_exception_handler(request, exc)`**:
+
+Handles FastAPI validation errors (400 Bad Request) when request parameters or body fail Pydantic validation.
+
+- **Triggered by**: Invalid query params, path params, or request body
+- **Logs**: Warning with full validation error details
+- **Response**: `{"detail": "Bad Request", "status_code": 400, "errors": [...]}`
+
+**`not_found_exception_handler(request, exc)`**:
+
+Handles requests to non-existent routes (404 Not Found).
+
+- **Triggered by**: Routes that don't match any defined endpoint
+- **Logs**: Warning with requested path
+- **Response**: `{"detail": "Not Found", "status_code": 404, "path": "/requested/path"}`
+
+**`request_timeout_exception_handler(request, exc)`**:
+
+Handles request timeout errors (408 Request Timeout) when operations exceed allowed time.
+
+- **Triggered by**: Long-running operations that exceed timeout thresholds
+- **Logs**: Warning with requested path
+- **Response**: `{"detail": "Request Timeout", "status_code": 408, "path": "/requested/path"}`
+
+**`global_exception_handler(request, exc)`**:
+
+Catches all unhandled exceptions (500 Internal Server Error) as a safety net.
+
+- **Triggered by**: Any unhandled Python exception in endpoint code
+- **Logs**: Error with full exception traceback for debugging
+- **Response**: `{"detail": "Internal Server Error", "status_code": 500}` (no sensitive details exposed)
+
+**Best Practices:**
+
+1. **Raise HTTPException explicitly**: Use `raise HTTPException(status_code=408)` for controlled timeouts
+2. **Let validation happen automatically**: Pydantic will trigger 400 for invalid input types
+3. **Don't catch everything**: Let unexpected exceptions bubble up to the 500 handler for proper logging
+4. **Use appropriate status codes**: 400 for client errors, 408 for timeouts, 500 for server errors
+5. **Never expose sensitive data**: The 500 handler deliberately hides exception details from clients
+
 ## Configuration (`config.py`)
 
 Provides centralized configuration management for the PyKata application using Pydantic's `BaseSettings`.

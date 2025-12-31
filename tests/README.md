@@ -179,6 +179,56 @@ Tests for S3 code storage service (`src/services/s3_service.py`) organized by me
 - Target: ≥80% for S3 service
 - Focus: upload/download mapping, error translation, special character handling
 
+### API Exception Handlers (`unit/test_api_exceptions.py`)
+
+Tests for global exception handlers in the FastAPI application (`src/api/exceptions.py`). Validates that all HTTP error responses follow a consistent structure and properly handle different error scenarios.
+
+**Test Application Setup:**
+
+Creates a separate FastAPI instance with test endpoints specifically designed to trigger each exception type. Uses `raise_server_exceptions=False` in the test client to capture exception handler responses instead of re-raising exceptions.
+
+**Test Endpoints:**
+
+- `/`: Root endpoint returning `{"message": "Hello World"}`
+- `/test/400`: Accepts `param: int` to trigger validation errors
+- `/test/validation`: POST endpoint accepting `param: int` for body validation
+- `/test/408`: Raises `HTTPException(408)` to trigger timeout handler
+- `/test/500`: Raises `ValueError` to trigger global exception handler
+
+**Test Classes:**
+
+**`TestBadRequest`**: Validates 400 Bad Request handler for validation failures.
+
+- `test_validation_error_returns_400`: Verifies 400 status code for invalid query params
+- `test_validation_error_response_structure`: Checks response includes `status_code`, `detail`, and `errors` fields
+- `test_post_validation_error_returns_400`: Validates POST body validation triggers same 400 response
+
+**`TestNotFound`**: Validates 404 Not Found handler for non-existent routes.
+
+- `test_not_found_returns_404`: Verifies 404 status code for missing routes
+- `test_not_found_response_structure`: Checks response includes `status_code`, `detail`, and `path` fields
+- `test_404_with_different_paths`: Validates handler works consistently across multiple non-existent paths
+
+**`TestInternalServerError`**: Validates 500 handler for unhandled exceptions.
+
+- `test_unhandled_exception_returns_500`: Verifies 500 status code for unexpected exceptions
+- `test_internal_error_response_structure`: Checks response includes `status_code` and `detail` fields
+- `test_internal_error_does_not_expose_traceback`: Ensures sensitive exception details are not exposed to clients
+
+**`TestRequestTimeout`**: Validates 408 Request Timeout handler.
+
+- `test_timeout_exception_returns_408`: Verifies 408 status code when timeout exception is raised
+- `test_timeout_response_structure`: Checks response includes `status_code`, `detail`, and `path` fields
+
+**`TestHealthcheck`**: Validates normal endpoint behavior is unaffected by exception handlers.
+
+- `test_root_endpoint_returns_200`: Ensures healthy endpoints return 200 and expected response
+
+**Coverage Target:**
+
+- Target: ≥90% for exception handlers module
+- Focus: Response structure consistency, status code accuracy, error detail exposure control
+
 ## Integration Tests
 
 Integration tests exercise real service interactions against a configured environment.
