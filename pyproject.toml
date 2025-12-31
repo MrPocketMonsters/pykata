@@ -109,6 +109,7 @@ markers = [
 branch = true
 source = ["src"]
 omit = [
+    "src/services/__code_wrapper.py",
     "*/tests/*",
     "*/site-packages/*",
 ]
@@ -122,6 +123,7 @@ exclude_lines = [
     "if __name__ == .__main__.:",
     "if TYPE_CHECKING:",
     "if typing.TYPE_CHECKING:",
+    "@abstractmethod",
 ]
 precision = 2
 show_missing = true

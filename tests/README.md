@@ -454,13 +454,13 @@ The test suite achieves excellent coverage across all modules:
 | --- | --- | --- |
 | API Exceptions | 100% | ✅ |
 | API Main | 97% | ✅ |
-| Config | 93% | ✅ |
-| Logger | 98% | ✅ |
+| Config | 91% | ✅ |
+| Logger | 96% | ✅ |
 | Models | 100% | ✅ |
-| DynamoDB Service | 96% | ✅ |
-| Execution Service | 82% | ✅ |
+| DynamoDB Service | 94% | ✅ |
+| Execution Service | 81% | ✅ |
 | S3 Service | 100% | ✅ |
-| **Total** | **96%** | **✅** |
+| **Total** | **95%** | **✅** |
 
 **Excluded from Coverage:**
 
