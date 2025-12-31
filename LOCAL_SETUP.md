@@ -113,7 +113,16 @@ aws --endpoint-url http://localhost:4566 dynamodb list-tables
 aws --endpoint-url http://localhost:4566 s3 ls
 ```
 
-## 7) Run the FastAPI app locally
+## 7) Mock Infrastructure with Terraform
+
+After this step, your terraform instance will download the necessary providers, create the tfstate file to track the infrastructure, and apply the configuration to create the mocked AWS resources in LocalStack.
+
+```bash
+terraform -chdir=terraform/environments/dev init
+terraform -chdir=terraform/environments/dev apply -auto-approve
+```
+
+## 8) Run the FastAPI app locally
 
 After this step, the FastAPI application will be running locally, allowing you to test and develop the API endpoints.
 
@@ -124,7 +133,7 @@ uvicorn src.api.main:app --reload --port 8000
 - Swagger UI: <http://localhost:8000/docs>
 - Health check: <http://localhost:8000/health>
 
-## 8) Seed sample katas (after Terraform creates infra)
+## 9) Seed sample katas (after Terraform creates infra)
 
 After this step, sample katas will be published to the local DynamoDB and S3 emulated by LocalStack, allowing you to test the application with pre-loaded data.
 
@@ -145,7 +154,7 @@ After this step, sample katas will be published to the local DynamoDB and S3 emu
     ./scripts/seed_katas.sh         # bulk seed all sample katas
     ```
 
-## 9) Run tests and hooks
+## 10) Run tests and hooks
 
 After this step, you will have verified that the codebase passes all pre-commit hooks and tests, ensuring code quality and correctness.
 
@@ -160,7 +169,11 @@ It this step, you will find solutions to common issues that may arise during set
 
 - **Virtualenv not activating**: ensure you are running the correct shell command for your terminal.
 - **Ports already in use (4566/8001)**: stop conflicting containers or processes, then re-run docker compose.
-- **Terraform fails to reach LocalStack**: confirm Docker is running; retry `terraform apply` after LocalStack is healthy.
+- **Terraform init/apply errors**:
+  - Ensure LocalStack is running and healthy.
+    > If the containers are healthy but errors persist, try restarting LocalStack: `docker compose -f docker/docker-compose.yml restart`.
+  - Remove existing `terraform/environments/dev/terraform.tfstate` file and run `terraform apply` again.
+    > Note you are not using -auto-approve here to inspect the infrastructure changes before applying.
 - **AWS CLI missing**: install from <https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html> or skip step 6.
 - **Tests cannot find AWS endpoints**: check `.env` has `AWS_ENDPOINT_URL=http://localhost:4566` and app reload picks it up.
 
@@ -168,5 +181,6 @@ It this step, you will find solutions to common issues that may arise during set
 
 1. Activate venv
 2. `docker compose -f docker/docker-compose.yml up -d`
-3. `uvicorn src.api.main:app --reload --port 8000`
-4. Code → `pre-commit run --all-files` → `pytest` → push branch → open PR → let CI run
+3. `terraform -chdir=terraform/environments/dev apply -auto-approve`
+4. `uvicorn src.api.main:app --reload --port 8000`
+5. Code → `pre-commit run --all-files` → `pytest` → push branch → open PR → let CI run
