@@ -8,6 +8,19 @@ Contains the core application code organized by concern:
 - **services/** - Business logic and external service integrations
 - **data/** - Seed data and sample katas
 
+## Table of Contents
+
+- [API](#api-api)
+  - [Main Application](#main-application-apimainpy)
+  - [Health Check Service](#health-check-service-get-health)
+  - [Exception Handlers](#exception-handlers-apiexceptionspy)
+- [Configuration](#configuration-configpy)
+- [Logger](#logger-loggerpy)
+- [Services](#services)
+  - [Dynamo Service](#dynamo-service-servicesdynamo_servicepy)
+  - [S3 Service](#s3-service-servicess3_servicepy)
+  - [Execution Service](#execution-service-execution_servicepy)
+
 ## API (`api/`)
 
 ### Main Application (`api/main.py`)
