@@ -278,10 +278,10 @@ The pipelines will be implemented as follows:
 | 1.6 - FastAPI Endpoints | 8 | ✅ Complete | Ready to start |
 | 1.7 - Seed Data | 3 | 🔄 In Progress | Depends on FastAPI & Terraform (1.4, 1.6) |
 | 1.8 - Tests (85% coverage) | 8 | ✅ Complete | Basic test structure, targeting 85%+ coverage |
-| 1.9 - CI/CD Deployment | 5 | 🚫 Blocked | Depends on FastAPI endpoints (1.6) |
+| 1.9 - CI/CD Deployment | 5 | ⬜ To Do | Depends on FastAPI endpoints (1.6) |
 | 1.10 - Documentation | 3 | 🔄 In Progress | API docs, LOCAL_SETUP, troubleshooting |
 
-**Sprint 1 Completion:** 78% (7 of 10 tasks complete | 2 in progress | 1 blocked)
+**Sprint 1 Completion:** 78% (7 of 10 tasks complete | 2 in progress | 0 blocked)
 
 > Documentation is being count as almost done since this README is part of it and is being updated continuously.
 
