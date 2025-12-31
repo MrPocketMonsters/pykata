@@ -12,11 +12,11 @@ Contains the core application code organized by concern:
 
 ### Main Application (`api/main.py`)
 
-The FastAPI application entrypoint that configures global exception handlers and defines API endpoints.
+The FastAPI application entrypoint that configures global exception handlers and defines API endpoints including health checks.
 
 **How It Works:**
 
-The application bootstraps by registering global exception handlers for consistent error responses across all endpoints:
+The application bootstraps by registering global exception handlers for consistent error responses across all endpoints.
 
 **Registered Handlers:**
 
@@ -25,13 +25,50 @@ The application bootstraps by registering global exception handlers for consiste
 - `408` → Request Timeout with requested path
 - `Exception` → 500 Internal Server Error with generic message
 
-### Exception Handlers (`api/exceptions.py`)
+### Health Check Service (`GET /health`)
 
-Provides centralized exception handling for the FastAPI application with standardized JSON responses and comprehensive logging.
+Provides service connectivity validation by checking both DynamoDB and S3 availability.
+
+**Response:**
+
+- **Status 200** (Healthy): All services operational
+
+  ```json
+  {
+    "status": "healthy",
+    "services": {
+      "dynamodb": true,
+      "s3": true
+    }
+  }
+  ```
+
+- **Status 503** (Degraded): One or more services unavailable
+
+  ```json
+  {
+    "status": "degraded",
+    "services": {
+      "dynamodb": false,
+      "s3": true
+    }
+  }
+  ```
 
 **How It Works:**
 
-Exception handlers are registered globally and intercept errors before they reach the client. Each handler returns a consistent JSON structure:
+The endpoint calls `check_health()` methods from both DynamoDB and S3 services to verify connectivity. Returns 200 if all healthy, 503 if any degraded.
+
+**Usage Example:**
+
+```bash
+$ curl http://localhost:8000/health
+{"status":"healthy","services":{"dynamodb":true,"s3":true}}
+```
+
+### Exception Handlers (`api/exceptions.py`)
+
+Provides centralized exception handling for the FastAPI application with standardized JSON responses and comprehensive logging.
 
 **Response Structure:**
 
@@ -240,6 +277,44 @@ Encapsulates DynamoDB access for kata metadata. Uses `boto3` with endpoints sour
 - `get_kata(kata_id)`: Fetch a single kata record; raises `ItemNotFoundError` when absent and `TableNotFoundError` for missing tables.
 - `list_katas(limit, offset=0)`: Scan-based pagination using simple offset/limit slicing.
 - `create_kata(metadata)`: Persist a new `KataMetadata` item; returns `True` on success.
+- `check_health()`: Verify DynamoDB table accessibility; returns `bool` without raising exceptions.
+
+**Error Handling:**
+
+- Maps DynamoDB `ResourceNotFound` errors to `TableNotFoundError`.
+- Wraps other client errors in `DynamoServiceError` for consistent upstream handling.
+- Health check gracefully handles all exceptions and returns boolean result.
+
+**Usage:**
+
+```python
+from src.services.dynamo_service import get_kata, list_katas, create_kata, check_health
+from src.models.kata import KataMetadata
+
+# 1) Validate DynamoDB service connectivity for health checks
+is_healthy = check_health()
+
+# 2) Retrieve a kata by ID (point lookup)
+metadata = get_kata("kata-123")
+
+# 3) Browse katas with simple pagination (scan + slice)
+#    'limit' = page size; 'offset' = starting offset
+items = list_katas(limit=10, offset=0)
+
+# 4) Create a new kata (returns True on success)
+#    Example: clone an existing one and adjust fields
+new_metadata = KataMetadata(
+   id="kata-123-copy",
+   title=f"Copy of {metadata.title}",
+   description=metadata.description,
+   tags=metadata.tags,
+   difficulty=metadata.difficulty,
+   s3_key="katas/copy.py",
+   sample_input=metadata.sample_input,
+   sample_output=metadata.sample_output,
+)
+created = create_kata(new_metadata)
+```
 
 **Error Handling:**
 
@@ -282,6 +357,7 @@ Encapsulates S3 access for kata code storage. Uses `boto3` with endpoints source
 
 - `upload_kata_code(kata_id, code)`: Store kata code in S3 and return the generated key (`katas/{kata_id}.py`).
 - `download_kata_code(s3_key)`: Retrieve kata code from S3 by key.
+- `check_health()`: Validate connectivity to the configured S3 bucket. Returns `True` if accessible, `False` if unavailable. Handles all exceptions gracefully without raising errors, suitable for health check endpoints.
 
 **Error Handling:**
 
@@ -292,13 +368,16 @@ Encapsulates S3 access for kata code storage. Uses `boto3` with endpoints source
 **Usage:**
 
 ```python
-from src.services.s3_service import upload_kata_code, download_kata_code
+from src.services.s3_service import upload_kata_code, download_kata_code, check_health
 
-# 1) Upload kata code (returns S3 key)
+# 1) Validate S3 service connectivity for health checks
+is_healthy = check_health()  # Returns True if S3 bucket is accessible, False otherwise
+
+# 2) Upload kata code (returns S3 key)
 code = "print('hello')"
 s3_key = upload_kata_code("kata-123", code)  # Returns: "katas/kata-123.py"
 
-# 2) Download kata code (retrieve by key)
+# 3) Download kata code (retrieve by key)
 retrieved_code = download_kata_code(s3_key)
 ```
 

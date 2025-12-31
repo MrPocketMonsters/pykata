@@ -194,3 +194,39 @@ def ensure_s3_available():
         aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
     )
     return client
+
+
+@pytest.fixture
+def mock_dynamo_health_up(monkeypatch):
+    """Mock DynamoDB health check to return healthy (True)."""
+    monkeypatch.setattr(
+        "src.api.main.check_dynamo_health",
+        lambda: True,
+    )
+
+
+@pytest.fixture
+def mock_dynamo_health_down(monkeypatch):
+    """Mock DynamoDB health check to return unhealthy (False)."""
+    monkeypatch.setattr(
+        "src.api.main.check_dynamo_health",
+        lambda: False,
+    )
+
+
+@pytest.fixture
+def mock_s3_health_up(monkeypatch):
+    """Mock S3 health check to return healthy (True)."""
+    monkeypatch.setattr(
+        "src.api.main.check_s3_health",
+        lambda: True,
+    )
+
+
+@pytest.fixture
+def mock_s3_health_down(monkeypatch):
+    """Mock S3 health check to return unhealthy (False)."""
+    monkeypatch.setattr(
+        "src.api.main.check_s3_health",
+        lambda: False,
+    )
