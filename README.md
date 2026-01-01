@@ -48,7 +48,6 @@ By the end of this exercise, the repository will contain:
 - Terraform modules for DynamoDB and S3 are complete; API Gateway and Lambda modules are pending.
 - Pydantic models and service layers for DynamoDB, S3, and code execution are implemented and tested.
 - Backend FastAPI endpoints for health check, kata listing, kata detail, and code execution are implemented and tested.
-- Publish and seed kata scripts are available for managing kata data.
 
 ## 🛠️ Tech Stack
 
@@ -187,22 +186,7 @@ For extensive instructions, see [LOCAL_SETUP.md](LOCAL_SETUP.md).
   uvicorn src.api.main:app --reload --port 8000
   ```
 
-- Store seed katas in `src/data`.
-
-  Publish all seed katas with:
-
-  ```bash
-  scripts/seed_katas.py --directory src/data
-  ```
-
-  or publish a single kata with:
-
-  ```bash
-  scripts/publish_kata.py --directory src/data/kata_dir
-  ```
-
-  Use the `--update` flag to update existing katas in both scripts.
-
+- Store seed katas in `src/data`; use `publish_kata.py` to push kata code and metadata to S3/Dynamo (LocalStack in dev).
 - Execute tests with `pytest`; pre-commit hooks will enforce style and typing (black, flake8, mypy).
 - Create short-lived feature branches, develop, run `pre-commit run --all-files`, run `pytest`, open a PR, and let CI validate before merge.
 
@@ -292,12 +276,12 @@ The pipelines will be implemented as follows:
 | 1.4 - Terraform Infrastructure | 8 | ✅ Complete | DynamoDB & S3 modules completed |
 | 1.5 - Models & Services | 8 | ✅ Complete | Pydantic models and service layers in development |
 | 1.6 - FastAPI Endpoints | 8 | ✅ Complete | Ready to start |
-| 1.7 - Seed Data | 3 | ✅ Complete | Depends on FastAPI & Terraform (1.4, 1.6) |
+| 1.7 - Seed Data | 3 | 🔄 In Progress | Depends on FastAPI & Terraform (1.4, 1.6) |
 | 1.8 - Tests (85% coverage) | 8 | ✅ Complete | Basic test structure, targeting 85%+ coverage |
-| 1.9 - CI/CD Deployment | 5 | 🔄 In Progress | Depends on FastAPI endpoints (1.6) |
+| 1.9 - CI/CD Deployment | 5 | ⬜ To Do | Depends on FastAPI endpoints (1.6) |
 | 1.10 - Documentation | 3 | 🔄 In Progress | API docs, LOCAL_SETUP, troubleshooting |
 
-**Sprint 1 Completion:** 89% (8 of 10 tasks complete | 2 in progress | 0 blocked)
+**Sprint 1 Completion:** 78% (7 of 10 tasks complete | 2 in progress | 0 blocked)
 
 > Documentation is being count as almost done since this README is part of it and is being updated continuously.
 
@@ -308,7 +292,10 @@ The pipelines will be implemented as follows:
 - Terraform modules for infra provisioning with LocalStack support for local dev.
 - Services: DynamoDB and S3 layers implemented with robust error mapping; execution subprocess enforces timeouts and captures stdout/stderr.
 - API: FastAPI endpoints for health check, kata listing, kata detail, and code execution with middleware for logging and error handling.
-- Testing: 120+ unit tests.
+- Testing: 100+ unit tests plus dev integration suites for DynamoDB, S3, and execution pipeline:
+  - [tests/integration/dev/test_dynamo_integration.py](tests/integration/dev/test_dynamo_integration.py)
+  - [tests/integration/dev/test_s3_integration.py](tests/integration/dev/test_s3_integration.py)
+  - [tests/integration/dev/test_execution_integration.py](tests/integration/dev/test_execution_integration.py)
 - Coverage: Unit pipeline runs with coverage threshold ≥85% (currently ~96%).
 - CI: GitHub Actions split jobs for unit and integration; integration job provisions LocalStack + Terraform before running dev tests.
 
