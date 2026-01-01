@@ -63,3 +63,56 @@ def test_execute_kata_timeout_path():
     assert result.stdout == ""
     assert result.stderr == "Execution timed out."
     assert result.execution_time_ms == 0.2 * 1000
+
+
+def test_execute_kata_with_documentation_string():
+    code = textwrap.dedent(
+        '''
+        """
+        This is a sample kata that reads input and prints it.
+        """
+        user_input = input()
+        """Input given by the user"""
+
+        print(f"Input was: {user_input}")
+        '''
+    )
+
+    result = execute_kata_code(code, "test input", timeout=1)
+
+    assert result.success is True
+    assert "Input was: test input" in result.stdout
+    assert result.stderr == ""
+    assert result.execution_time_ms >= 0
+
+
+def test_execute_kata_with_escaped_newlines_in_input():
+    code = textwrap.dedent(
+        """
+        lines = []
+        while True:
+            try:
+                line = input()
+                lines.append(line)
+            except EOFError:
+                break
+        print("Received lines:")
+        for l in lines:
+            print(l)
+        """
+    )
+
+    # Input contains actual newlines
+    user_input = "line1\nline2\nline3"
+
+    result = execute_kata_code(code, user_input, timeout=1)
+
+    assert result.success is True
+
+    lines = result.stdout.splitlines()
+    assert lines.pop(0) == "Received lines:"
+    assert lines.pop(0) == "line1"
+    assert lines.pop(0) == "line2"
+    assert lines.pop(0) == "line3"
+    assert result.stderr == ""
+    assert result.execution_time_ms >= 0
