@@ -27,3 +27,13 @@ output "s3_bucket_arn" {
   description = "S3 Bucket ARN"
   value       = module.pykata_bucket.bucket_arn
 }
+
+output "lambda_role_arn" {
+  description = "IAM Role ARN for Lambda"
+  value       = aws_iam_role.lambda_role.arn
+}
+
+output "lambda_log_group_arn" {
+  description = "CloudWatch Log Group ARN for Lambda"
+  value       = aws_cloudwatch_log_group.lambda_log_group.arn
+}

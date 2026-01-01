@@ -17,3 +17,13 @@ output "s3_bucket_arn" {
   description = "ARN of the S3 bucket"
   value       = module.infra.s3_bucket_arn
 }
+
+output "lambda_role_arn" {
+  description = "ARN of the IAM Role for Lambda"
+  value       = module.infra.lambda_role_arn
+}
+
+output "lambda_log_group_arn" {
+  description = "ARN of the CloudWatch Log Group for Lambda"
+  value       = module.infra.lambda_log_group_arn
+}
