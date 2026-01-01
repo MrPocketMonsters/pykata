@@ -33,7 +33,7 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          pytest -m unit --cov=src --cov-report=term-missing --cov-report=xml --cov-fail-under=85
+          pytest -m "unit or integration" --cov=src --cov-report=term-missing --cov-report=xml --cov-fail-under=85
 
       - name: Upload coverage to Codecov
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'

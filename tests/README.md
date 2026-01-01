@@ -20,6 +20,11 @@ Comprehensive test suite for validating the functionality of service layers, API
   - [Single Kata Endpoint](#single-kata-endpoint-unittest_api_single_katapy)
   - [Kata Execution Endpoint](#kata-execution-endpoint-unittest_api_kata_runpy)
 - [Integration Tests](#integration-tests)
+  - [Running Integration Tests](#running-integration-tests)
+  - [Katas List Integration](#katas-list-integration-test_katas_integrationpy)
+  - [Single Kata Integration](#single-kata-integration-test_single_kata_integrationpy)
+  - [Kata Run Integration](#kata-run-integration-test_kata_run_integrationpy)
+  - [About Integration Test Coverage](#about-integration-test-coverage)
 - [End-to-End Tests](#end-to-end-tests)
   - [Prerequisites](#prerequisites)
   - [Running End-to-End Tests](#running-end-to-end-tests)
@@ -411,7 +416,83 @@ Tests for the `POST /katas/run` endpoint that executes a kata with provided inpu
 
 ## Integration Tests
 
-Will test complete service interactions mocking external dependencies.
+Integration tests validate complete service interactions by mocking external AWS dependencies at the boto3 client level. Unlike unit tests that mock service functions directly, integration tests mock boto3 responses and subprocess calls to test the full request flow through multiple service layers.
+
+**Testing Philosophy:**
+
+- Mock AWS SDK (boto3) responses, not service layer functions
+- Mock subprocess execution for code execution testing
+- Validate complete request-to-response flows
+- Test error propagation through service boundaries
+- Ensure proper HTTP status codes and error messages
+
+**Shared Fixtures (from `conftest.py`):**
+
+- `mock_dynamo_get_item`: Factory to create DynamoDB get_item responses
+- `mock_dynamo_scan`: Factory to create DynamoDB scan responses
+- `mock_s3_get_object`: Factory to create S3 get_object responses
+- `mock_subprocess_result`: Factory to create subprocess execution results
+- `mock_boto_factory`: Factory to create complete boto3 client mocks with both DynamoDB and S3
+
+### Running Integration Tests
+
+```bash
+pytest -m integration -v -s
+```
+
+### Katas List Integration (`test_katas_integration.py`)
+
+Tests the `GET /katas` endpoint with 5 focused test cases:
+
+**Success Scenarios (3 tests):**
+
+- `test_katas_list_returns_items_with_correct_structure`: Validates response structure with multiple katas, ensuring all fields are present and `s3_key` is excluded
+- `test_katas_list_returns_empty_when_no_katas`: Verifies empty list response when no katas exist
+- `test_katas_list_handles_pagination_parameters`: Tests pagination limit and offset parameters are processed correctly
+
+**Error Scenarios (2 tests):**
+
+- `test_katas_list_handles_dynamodb_errors`: Tests HTTP 500 response when DynamoDB service fails
+- `test_katas_list_validates_parameters_and_handles_exceptions`: Tests validation errors (HTTP 400) for negative parameters and generic exception handling without exposing internal details
+
+### Single Kata Integration (`test_single_kata_integration.py`)
+
+Tests the `GET /katas/{kata_id}` endpoint with 6 focused test cases:
+
+**Success Scenarios (3 tests):**
+
+- `test_single_kata_returns_complete_data`: Validates full kata response including metadata from DynamoDB and code from S3
+- `test_single_kata_with_multiline_code`: Tests multiline code retrieval and correct newline preservation
+- `test_single_kata_with_empty_tags`: Verifies response structure with empty tags array
+
+**Error Scenarios (3 tests):**
+
+- `test_single_kata_not_found_in_dynamodb`: Tests HTTP 404 when kata ID does not exist
+- `test_single_kata_s3_errors`: Tests HTTP 404 when kata code is missing from S3
+- `test_single_kata_service_errors`: Tests HTTP 500 for DynamoDB and S3 service failures
+
+### Kata Run Integration (`test_kata_run_integration.py`)
+
+Tests the `POST /katas/run` endpoint with 7 focused test cases:
+
+**Success Scenarios (3 tests):**
+
+- `test_kata_run_executes_successfully`: Validates successful code execution with mocked subprocess returning stdout
+- `test_kata_run_with_multiline_output`: Verifies correct handling of multiline execution output
+- `test_kata_run_respects_timeout_configuration`: Tests that timeout parameter is validated and capped at maximum allowed value
+
+**Error Scenarios (4 tests):**
+
+- `test_kata_run_handles_runtime_errors`: Tests execution failure with runtime error, validating success=False and stderr capture
+- `test_kata_run_handles_timeout`: Validates HTTP 408 response when execution exceeds timeout
+- `test_kata_run_handles_missing_resources`: Tests HTTP 404 when kata does not exist in DynamoDB
+- `test_kata_run_handles_service_errors_and_validation`: Tests HTTP 500 for service failures and HTTP 400 for validation errors
+
+### About Integration Test Coverage
+
+Unit tests already cover a large portion of the codebase. Integration tests focus on interaction paths and error propagation assuming unit tests validate individual components. For that reason, coverage targets for integration tests are lower.
+
+- Target: ≥70% for integration tests
 
 ## End-to-End Tests
 

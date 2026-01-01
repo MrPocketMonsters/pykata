@@ -4,6 +4,7 @@ import boto3
 import pytest
 from botocore.stub import Stubber
 from pydantic_settings import SettingsConfigDict
+from unittest.mock import MagicMock
 
 
 def pytest_collection_modifyitems(items):
@@ -253,20 +254,9 @@ def kata_metadata_factory():
 
 
 @pytest.fixture
-def kata_metadata():
+def kata_metadata(kata_metadata_factory):
     """Fixture providing a default kata metadata instance."""
-    from src.models.kata import KataMetadata
-
-    return KataMetadata(
-        id="kata-1",
-        title="Title 1",
-        description="Desc 1",
-        tags=["arrays", "strings"],
-        difficulty="beginner",
-        s3_key="katas/kata-1.py",
-        sample_input="",
-        sample_output="",
-    )
+    return kata_metadata_factory(1)
 
 
 @pytest.fixture
@@ -291,3 +281,130 @@ def execution_result():
 def kata_code():
     """Fixture providing default kata code."""
     return "print(input())"
+
+
+# ============================================================================
+# Integration test fixtures for mocking AWS and subprocess
+# ============================================================================
+
+
+@pytest.fixture
+def mock_dynamo_get_item():
+    """Factory fixture to create mock DynamoDB get_item responses."""
+
+    def _create_response(kata_id="kata-1", title="Test Kata", tags=None):
+        if tags is None:
+            tags = ["test"]
+        return {
+            "Item": {
+                "id": {"S": kata_id},
+                "title": {"S": title},
+                "description": {"S": f"Description for {kata_id}"},
+                "tags": {"L": [{"S": tag} for tag in tags]},
+                "difficulty": {"S": "beginner"},
+                "s3_key": {"S": f"katas/{kata_id}.py"},
+                "sample_input": {"S": "test input"},
+                "sample_output": {"S": "test output"},
+            }
+        }
+
+    return _create_response
+
+
+@pytest.fixture
+def mock_dynamo_scan():
+    """Factory fixture to create mock DynamoDB scan responses."""
+
+    def _create_response(items_count=2):
+        items = []
+        for i in range(items_count):
+            items.append(
+                {
+                    "id": {"S": f"kata-{i+1}"},
+                    "title": {"S": f"Kata {i+1}"},
+                    "description": {"S": f"Description {i+1}"},
+                    "tags": {"L": [{"S": "test"}]},
+                    "difficulty": {"S": "beginner"},
+                    "s3_key": {"S": f"katas/kata-{i+1}.py"},
+                    "sample_input": {"S": "input"},
+                    "sample_output": {"S": "output"},
+                }
+            )
+        return {"Items": items, "Count": len(items)}
+
+    return _create_response
+
+
+@pytest.fixture
+def mock_s3_get_object():
+    """Factory fixture to create mock S3 get_object responses."""
+
+    def _create_response(code="print(input())"):
+        return {"Body": MagicMock(read=lambda: code.encode("utf-8"))}
+
+    return _create_response
+
+
+@pytest.fixture
+def mock_subprocess_result():
+    """Factory fixture to create mock subprocess results."""
+
+    def _create_result(stdout="output", stderr="", success=True, exec_time=50):
+        result = MagicMock()
+        result.returncode = 0 if success else 1
+        result.stdout = stdout
+        # Add execution metadata markers for proper parsing
+        metadata = f"__EXECUTION_TIME__:{exec_time}\n__SUCCESS__:{success}"
+        result.stderr = f"{stderr}\n{metadata}" if stderr else metadata
+        return result
+
+    return _create_result
+
+
+@pytest.fixture
+def mock_boto_factory():
+    """Factory fixture to create mock boto3 clients with dynamo and s3."""
+
+    def _create_mock(
+        dynamo_response=None, s3_response=None, dynamo_error=None, s3_error=None
+    ):
+        """Create mock boto3 client factory.
+
+        Args:
+            dynamo_response: Response for DynamoDB operations (get_item, scan, etc.)
+            s3_response: Response for S3 get_object
+            dynamo_error: Exception to raise for DynamoDB operations
+            s3_error: Exception to raise for S3 operations
+        """
+        mock_clients = {}
+
+        def client_factory(service_name, **kwargs):
+            if service_name == "dynamodb":
+                if "dynamodb" not in mock_clients:
+                    mock_clients["dynamodb"] = MagicMock()
+                    if dynamo_error:
+                        mock_clients["dynamodb"].get_item.side_effect = dynamo_error
+                        mock_clients["dynamodb"].scan.side_effect = dynamo_error
+                    elif dynamo_response is not None:
+                        # Check if response is explicitly empty dict (not found case)
+                        if isinstance(dynamo_response, dict) and not dynamo_response:
+                            mock_clients["dynamodb"].get_item.return_value = {}
+                            mock_clients["dynamodb"].scan.return_value = {}
+                        else:
+                            mock_clients["dynamodb"].get_item.return_value = (
+                                dynamo_response
+                            )
+                            mock_clients["dynamodb"].scan.return_value = dynamo_response
+                return mock_clients["dynamodb"]
+            elif service_name == "s3":
+                if "s3" not in mock_clients:
+                    mock_clients["s3"] = MagicMock()
+                    if s3_error:
+                        mock_clients["s3"].get_object.side_effect = s3_error
+                    elif s3_response is not None:
+                        mock_clients["s3"].get_object.return_value = s3_response
+                return mock_clients["s3"]
+
+        return client_factory
+
+    return _create_mock

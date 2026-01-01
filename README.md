@@ -308,8 +308,9 @@ The pipelines will be implemented as follows:
 - Terraform modules for infra provisioning with LocalStack support for local dev.
 - Services: DynamoDB and S3 layers implemented with robust error mapping; execution subprocess enforces timeouts and captures stdout/stderr.
 - API: FastAPI endpoints for health check, kata listing, kata detail, and code execution with middleware for logging and error handling.
-- Testing: 120+ unit tests.
-- Coverage: Unit pipeline runs with coverage threshold ≥85% (currently ~96%).
+- Testing: 116 unit tests.
+- Integration: 18 integration tests for api endpoints.
+- Coverage: Unit and integration pipeline runs with coverage threshold ≥85% (currently ~95%).
 - CI: GitHub Actions split jobs for unit and integration; integration job provisions LocalStack + Terraform before running dev tests.
 
 ## 🏆 Milestones
