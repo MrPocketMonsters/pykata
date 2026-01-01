@@ -12,6 +12,14 @@ Helper scripts for publishing tasks. Run them from the repository root so import
   - [What the script does](#what-the-script-does)
   - [Examples](#examples)
   - [Troubleshooting](#troubleshooting)
+- [Seed Katas (`seed_katas.py`)](#seed-katas-seed_kataspy)
+  - [Purpose](#purpose-1)
+  - [Prerequisites](#prerequisites-1)
+  - [Usage](#usage-1)
+  - [Arguments](#arguments-1)
+  - [What the script does](#what-the-script-does-1)
+  - [Examples](#examples-1)
+  - [Troubleshooting](#troubleshooting-1)
 
 ## Publish Kata (`publish_kata.py`)
 
@@ -83,3 +91,55 @@ python -m scripts.publish_kata --directory src/data/custom_dictionary --update
 - **ModuleNotFoundError: No module named 'src'**: Run the script with `python -m scripts.publish_kata ...` from the repo root, or export the repo root to `PYTHONPATH` before running.
 - **Metadata validation errors**: Ensure `metadata.json` matches the `KataMetadata` schema and includes required fields (`id`, `title`, `description`, `tags`, `difficulty`, `s3_key`, `sample_input`, `sample_output`).
 - **AST parse errors**: Fix syntax errors in `main.py`; the script stops before uploading if parsing fails.
+
+## Seed Katas (`seed_katas.py`)
+
+### Purpose
+
+Bulk-publishes all katas contained in a parent directory. Performs service health checks first, then calls the publish script once per kata directory.
+
+### Prerequisites
+
+- Same as `publish_kata.py`: active virtualenv with dependencies, configured AWS/localstack endpoints, and valid kata directories containing `metadata.json` and `main.py`.
+- Local AWS services reachable (`check_health` for S3 and DynamoDB must succeed).
+
+### Usage
+
+From the repository root:
+
+```bash
+python -m scripts.seed_katas --directory PATH/TO/KATAS_PARENT [--update]
+```
+
+### Arguments
+
+- `--directory` (required): Path to a folder whose immediate subdirectories each contain a kata (`metadata.json` + `main.py`).
+- `--update` (optional): Forwarded to the publish script to update existing katas instead of creating new ones.
+
+### What the script does
+
+1. Validates the parent directory exists.
+2. Runs S3 and DynamoDB health checks; aborts if either is unhealthy.
+3. Enumerates subdirectories and prepares a publish command for each.
+4. Executes `python -m scripts.publish_kata` per kata, adding `--update` when requested.
+5. Collects exit codes and prints a success/failure summary.
+
+### Examples
+
+Seed all katas under `src/data`:
+
+```bash
+python -m scripts.seed_katas --directory src/data
+```
+
+Update all katas under `src/data`:
+
+```bash
+python -m scripts.seed_katas --directory src/data --update
+```
+
+### Troubleshooting
+
+- **ModuleNotFoundError: No module named 'src'**: Run with `python -m scripts.seed_katas ...` from the repo root so package imports resolve.
+- **Health check failures**: Ensure LocalStack/AWS endpoints are reachable and environment variables match your setup; the script exits before publishing if checks fail.
+- **Partial failures**: The final summary lists which kata directories failed; rerun for those paths after fixing their metadata/code.

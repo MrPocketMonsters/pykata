@@ -1,3 +1,5 @@
+"""This script publishes a kata to the repository by uploading its code to S3 and creating its metadata entry in DynamoDB."""
+
 import argparse
 from os import path
 import json
