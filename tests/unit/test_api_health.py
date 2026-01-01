@@ -90,8 +90,8 @@ class TestHealthCheckAllServicesDown:
         assert data["services"]["s3"] is False
 
 
-class TestHealthCheckIntegration:
-    """Integration tests for health check endpoint."""
+class TestHealthCheckEndpoint:
+    """Behavior tests for health check endpoint."""
 
     def test_health_endpoint_exists(self, mock_dynamo_health_up, mock_s3_health_up):
         """Test that health endpoint is accessible."""

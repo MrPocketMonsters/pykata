@@ -10,10 +10,8 @@ def pytest_collection_modifyitems(items):
     """Apply markers to tests based on their file location.
 
     Unit tests (tests/unit/*) get @pytest.mark.unit
-    Dev integration tests (tests/integration/dev/*)
-    get @pytest.mark.integration and @pytest.mark.dev_integration
-    Prod integration tests (tests/integration/prod/*)
-    get @pytest.mark.integration and @pytest.mark.prod_integration
+    Integration tests (tests/integration/*) get @pytest.mark.integration
+    End-to-end tests (tests/e2e/*) get @pytest.mark.e2e
     """
     for item in items:
         file_path = str(item.fspath).replace("\\", "/")
@@ -21,11 +19,8 @@ def pytest_collection_modifyitems(items):
             item.add_marker(pytest.mark.unit)
         elif "/integration/" in file_path:
             item.add_marker(pytest.mark.integration)
-
-        if "/integration/dev/" in file_path:
-            item.add_marker(pytest.mark.dev_integration)
-        elif "/integration/prod/" in file_path:
-            item.add_marker(pytest.mark.prod_integration)
+        elif "/e2e/" in file_path:
+            item.add_marker(pytest.mark.e2e)
 
 
 @pytest.fixture

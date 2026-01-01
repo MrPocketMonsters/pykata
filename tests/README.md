@@ -20,11 +20,12 @@ Comprehensive test suite for validating the functionality of service layers, API
   - [Single Kata Endpoint](#single-kata-endpoint-unittest_api_single_katapy)
   - [Kata Execution Endpoint](#kata-execution-endpoint-unittest_api_kata_runpy)
 - [Integration Tests](#integration-tests)
-  - [Prerequisites](#prerequisites)
-  - [Running Integration Tests](#running-integration-tests)
-  - [Dynamo Service Integration](#dynamo-service-integration-test_dynamo_integrationpy)
-  - [S3 Service Integration](#s3-service-integration-test_s3_integrationpy)
 - [End-to-End Tests](#end-to-end-tests)
+  - [Prerequisites](#prerequisites)
+  - [Running End-to-End Tests](#running-end-to-end-tests)
+  - [Dynamo Service End-to-End](#dynamo-service-end-to-end-test_dynamo_e2epy)
+  - [S3 Service End-to-End](#s3-service-end-to-end-test_s3_e2epy)
+  - [Execution Service End-to-End](#execution-service-end-to-end-test_execution_e2epy)
 
 ## Directory Structure
 
@@ -89,7 +90,7 @@ Tests for the application logging system (`src/logger.py`). Validates that logge
 
 - **`test_log_call_*`** (`TestLogCall`): Tests the `@log_call` decorator for automatic logging of function entry/exit, exception capture, and metadata preservation (`__name__`, `__doc__`).
 
-- **`test_logger_*`** (`TestLoggerIntegration`): Validates overall logger functionality including logger methods and different module logger instances.
+- **`test_logger_*`** (`TestLoggerUtilities`): Validates overall logger functionality including logger methods and different module logger instances.
 
 **Coverage Target:**
 
@@ -308,7 +309,7 @@ Uses the production FastAPI application instance imported from `src.api.main`. F
 
 - `test_health_all_services_down`: Verifies endpoint returns 503 Unavailable status with both services down
 
-**`TestHealthCheckIntegration`**: Validates overall health check functionality and integration with root endpoint.
+**`TestHealthCheckEndpoint`**: Validates overall health check functionality and behavior with root endpoint.
 
 - `test_health_endpoint_exists`: Confirms the `/health` endpoint is accessible and defined
 - `test_health_response_is_json`: Validates response has correct JSON content-type header
@@ -410,74 +411,58 @@ Tests for the `POST /katas/run` endpoint that executes a kata with provided inpu
 
 ## Integration Tests
 
-Integration tests exercise real service interactions against a configured environment.
+Will test complete service interactions mocking external dependencies.
 
-**Directory Structure:**
+## End-to-End Tests
 
-```text
-integration/     # Both environments
-├── dev/         # LocalStack + Terraform dev environment
-└── prod/        # AWS production environment
-```
+End-to-end tests exercise real module interactions against a configured environment.
 
 ### Prerequisites
 
-- DynamoDB endpoint reachable (LocalStack via docker-compose, or AWS)
-- Kata table provisioned. For LocalStack dev, apply: see [terraform/environments/dev](../terraform/environments/dev)
+A running environment with:
 
-**Note:** Integration tests are excluded from the main pytest run in CI. The `integration` job ensures the dev environment is ready (Terraform applied) before running dev integration tests.
+- DynamoDB endpoint reachable
+- Kata table provisioned.
+
+> See [LOCAL_SETUP.md](../LOCAL_SETUP.md) for instructions on setting up LocalStack and Terraform dev environment.
+
+**Note:** End-to-end tests are excluded from the main pytest run in CI Workflow. The Deploy and Test Dev Environment workflow provisions the dev environment and runs these tests separately when merging to `master`.
 
 **Shared Fixtures (from `conftest.py`):**
 
-- `ensure_dynamo_available`: Provides a configured DynamoDB client for integration tests.
+- `ensure_dynamo_available`: Provides a configured DynamoDB client for end-to-end tests.
 
-### Running Integration Tests
-
-- Dev suite (LocalStack or dev env):
+### Running end-to-end Tests
 
 ```bash
-pytest -m dev_integration -v -s
+pytest -m e2e -v -s
 ```
 
-- Prod suite (AWS production):
-
-```bash
-pytest -m prod_integration -v -s
-```
-
-- All integration tests that are not production level:
-
-```bash
-pytest -m "integration and not prod_integration" -v -s
-```
-
-Note: CI workflow runs this set of tests after provisioning the dev environment.
-
-### Dynamo Service Integration (`test_dynamo_integration.py`)
+### Dynamo Service End-to-End (`test_dynamo_e2e.py`)
 
 Tests that create a new kata with dummy info, list it, and fetch it:
 
-- `test_create_and_get_kata_integration`: Creates a kata (unique ID), then fetches by ID.
-- `test_list_contains_created_kata_integration`: Creates another kata, then verifies listing includes it.
+- `test_create_and_get_kata_e2e`: Creates a kata (unique ID), then fetches by ID.
+- `test_list_contains_created_kata_e2e`: Creates another kata, then verifies listing includes it.
 
 Tests will fail if the DynamoDB endpoint or required table is not available (no skip behavior).
 
-### S3 Service Integration (`test_s3_integration.py`)
+### S3 Service End-to-End (`test_s3_e2e.py`)
 
 Tests that upload and download kata code, verifying round-trip integrity:
 
-- `test_upload_and_download_kata_code_integration`: Upload code with special characters, then download and verify content matches.
-- `test_upload_multiple_katas_integration`: Upload multiple katas independently, then verify each can be downloaded with correct content.
+- `test_upload_and_download_kata_code_e2e`: Upload code with special characters, then download and verify content matches.
+- `test_upload_multiple_katas_e2e`: Upload multiple katas independently, then verify each can be downloaded with correct content.
 
 Tests will fail if the S3 endpoint or required bucket is not available (no skip behavior).
 
-### Execution Service Integration (`test_execution_integration.py`)
+### Execution Service End-to-End (`test_execution_e2e.py`)
 
-Integration tests for the code execution service combining DynamoDB metadata, S3 code storage, and subprocess execution into a complete kata pipeline:
+End-to-end tests for the code execution service combining DynamoDB metadata, S3 code storage, and subprocess execution into a complete kata pipeline:
 
-- `test_full_kata_pipeline_integration`: Full end-to-end flow: (1) upload code to S3, (2) create metadata in DynamoDB, (3) fetch metadata and code, (4) execute retrieved code. Validates that all components integrate correctly.
-- `test_kata_execution_with_exception_integration`: Pipeline scenario where uploaded code raises an exception during execution. Verifies exception capture and `success=False` status.
-- `test_multiple_kata_executions_integration`: Create and execute multiple independent katas, ensuring isolation and correct content retrieval for each.
+- `test_full_kata_pipeline_e2e`: Full end-to-end flow: (1) upload code to S3, (2) create metadata in DynamoDB, (3) fetch metadata and code, (4) execute retrieved code. Validates that all components integrate correctly.
+- `test_kata_execution_with_exception_e2e`: Pipeline scenario where uploaded code raises an exception during execution. Verifies exception capture and `success=False` status.
+- `test_multiple_kata_executions_e2e`: Create and execute multiple independent katas, ensuring isolation and correct content retrieval for each.
 
 Tests will fail if DynamoDB, S3, or execution environment is unavailable.
 
@@ -485,10 +470,6 @@ Tests will fail if DynamoDB, S3, or execution environment is unavailable.
 
 - `ensure_dynamo_available`: Real DynamoDB client
 - `ensure_s3_available`: Real S3 client
-
-## End-to-End Tests
-
-Will test complete request-response flows through FastAPI endpoints and Lambda handlers against LocalStack or test AWS environment.
 
 ## Coverage Summary
 

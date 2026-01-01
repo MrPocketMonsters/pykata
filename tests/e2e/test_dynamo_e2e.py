@@ -1,11 +1,11 @@
-"""Integration tests for DynamoDB kata service against a configured environment.
+"""End-to-end tests for DynamoDB kata service against a configured environment.
 
 Prerequisites:
-- DynamoDB endpoint reachable (LocalStack or AWS)
-- Kata table provisioned (e.g., Terraform dev applied or equivalent)
+- DynamoDB endpoint reachable
+- Kata table provisioned
 
-All tests in this module inherit @pytest.mark.integration and @pytest.mark.dev_integration
-from tests/integration/__init__.py.
+All tests in this module inherit @pytest.mark.e2e
+via pytest_collection_modifyitems in tests/conftest.py.
 """
 
 import uuid
@@ -17,17 +17,17 @@ from src.services.dynamo_service import create_kata, get_kata, list_katas
 """Fixture ensure_dynamo_available is provided by tests/conftest.py"""
 
 
-def test_create_and_get_kata_integration(ensure_dynamo_available):
+def test_create_and_get_kata_e2e(ensure_dynamo_available):
     """Create a kata, then fetch it by ID using the service layer."""
 
     kata_id = f"it-kata-{uuid.uuid4().hex[:8]}"
     metadata = KataMetadata(
         id=kata_id,
-        title="Integration Dummy Kata",
-        description="Dummy description for integration test",
-        tags=["integration", "dummy"],
+        title="End-to-end Dummy Kata",
+        description="Dummy description for end-to-end test",
+        tags=["e2e", "dummy"],
         difficulty="beginner",
-        s3_key="katas/integration_dummy.py",
+        s3_key="katas/e2e_dummy.py",
         sample_input="foo",
         sample_output="bar",
     )
@@ -40,17 +40,17 @@ def test_create_and_get_kata_integration(ensure_dynamo_available):
     assert fetched.tags == metadata.tags
 
 
-def test_list_contains_created_kata_integration(ensure_dynamo_available):
+def test_list_contains_created_kata_e2e(ensure_dynamo_available):
     """Create a kata, then verify list includes it (simple pagination)."""
 
     kata_id = f"it-kata-{uuid.uuid4().hex[:8]}"
     metadata = KataMetadata(
         id=kata_id,
-        title="Integration Dummy Kata #2",
-        description="Another dummy description for integration test",
-        tags=["integration", "dummy"],
+        title="End-to-end Dummy Kata #2",
+        description="Another dummy description for end-to-end test",
+        tags=["e2e", "dummy"],
         difficulty="beginner",
-        s3_key="katas/integration_dummy2.py",
+        s3_key="katas/e2e_dummy2.py",
         sample_input="alpha",
         sample_output="beta",
     )

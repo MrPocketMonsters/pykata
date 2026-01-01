@@ -1,10 +1,10 @@
-"""Integration tests for S3 kata code service (dev environment).
+"""End-to-end tests for S3 kata code service.
 
 Prerequisites:
-- S3 endpoint reachable via LocalStack
-- Kata code bucket provisioned (Terraform dev applied)
+- S3 endpoint reachable
+- Kata code bucket provisioned
 
-All tests in this module inherit @pytest.mark.integration and @pytest.mark.dev_integration
+All tests in this module inherit @pytest.mark.e2e
 via pytest_collection_modifyitems in tests/conftest.py.
 """
 
@@ -16,7 +16,7 @@ from src.services.s3_service import upload_kata_code, download_kata_code
 """Fixture ensure_s3_available is provided by tests/conftest.py"""
 
 
-def test_upload_and_download_kata_code_integration(ensure_s3_available):
+def test_upload_and_download_kata_code_e2e(ensure_s3_available):
     """Upload code, then download it and verify content matches."""
 
     kata_id = f"it-s3-{uuid.uuid4().hex[:8]}"
@@ -33,7 +33,7 @@ def test_upload_and_download_kata_code_integration(ensure_s3_available):
     assert downloaded == code
 
 
-def test_upload_multiple_katas_integration(ensure_s3_available):
+def test_upload_multiple_katas_e2e(ensure_s3_available):
     """Upload multiple katas and verify each can be downloaded independently."""
 
     kata_id_1 = f"it-s3-{uuid.uuid4().hex[:8]}"
