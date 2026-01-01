@@ -133,26 +133,25 @@ uvicorn src.api.main:app --reload --port 8000
 - Swagger UI: <http://localhost:8000/docs>
 - Health check: <http://localhost:8000/health>
 
-## 9) Seed sample katas (after Terraform creates infra)
+## 9) Seed sample katas
 
 After this step, sample katas will be published to the local DynamoDB and S3 emulated by LocalStack, allowing you to test the application with pre-loaded data.
 
-1) Apply Terraform for dev (LocalStack backend):
+Bulk seed katas in the `src/data` directory into LocalStack:
 
-    ```bash
-    cd terraform/environments/dev
-    terraform init                # Initialize Terraform
-    terraform plan                # Optional to review changes
-    terraform apply -auto-approve # Automatically approve changes
-    cd ../../..
-    ```
+```bash
+python -m scripts.seed_katas --directory src/data/
+```
 
-2) Publish and seed katas:
+Or alternatively, seed a single kata.
 
-    ```bash
-    python scripts/publish_kata.py  # for a single kata if you pass args; see script help
-    ./scripts/seed_katas.sh         # bulk seed all sample katas
-    ```
+```bash
+python -m scripts.publish_kata --directory src/data/kata_to_publish/
+```
+
+In both cases, if you need to update an existing kata, add the `--update` flag.
+
+> The `kata_to_publish` folder should contain `metadata.json` and `main.py` files. See [Scripts Directory Documentation](scripts/README.md) for more details.
 
 ## 10) Run tests and hooks
 
@@ -176,6 +175,7 @@ It this step, you will find solutions to common issues that may arise during set
     > Note you are not using -auto-approve here to inspect the infrastructure changes before applying.
 - **AWS CLI missing**: install from <https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html> or skip step 6.
 - **Tests cannot find AWS endpoints**: check `.env` has `AWS_ENDPOINT_URL=http://localhost:4566` and app reload picks it up.
+- **Kata publishing errors**: see [Scripts Directory Documentation](scripts/README.md) for troubleshooting kata publishing scripts.
 
 ## 🔮 Daily dev loop (cheat sheet)
 
