@@ -554,11 +554,8 @@ Provides isolated execution of user-submitted kata code with strict timeout enfo
 The execution service uses a **subprocess isolation strategy** rather than in-process sandboxing for resource control:
 
 - **Separate Python Interpreter**: Each kata execution spawns a fresh Python subprocess, ensuring complete memory isolation from the parent process.
-- **Template-Based Code Injection**: User code is injected into a pre-defined wrapper template (`__code_wrapper.py`) that handles:
-  - Input stream redirection (replaces `sys.stdin` with user-provided input)
-  - Execution timing measurement
-  - Exception handling and error capture
-  - Metadata reporting via special stderr markers
+- **File-based Wrapper Execution**: The kata source is written to a temporary file and executed by a small wrapper script (`__code_wrapper.py`) which reads the kata file path from its first argument and runs it. The wrapper is responsible for timing, exception capture and emitting metadata markers on stderr.
+- **Stdin for User Input**: User-provided input is sent to the wrapper process via stdin; this avoids fragile command-line quoting and escaping when code or input contains quotes, triple-quotes or multi-line content.
 - **Timeout Enforcement**: Uses `subprocess.run(timeout=...)` for OS-level process termination if execution exceeds the allowed time.
 
 #### Current Guarantees
@@ -570,32 +567,30 @@ The execution service uses a **subprocess isolation strategy** rather than in-pr
 
 #### Implementation Details
 
-**Wrapper Template (`__code_wrapper.py`)**:
+**Wrapper Script (`__code_wrapper.py`)**:
 
-- Contains two placeholders: `"USER_INPUT_PLACEHOLDER"` and `"EXEC_CODE_PLACEHOLDER"`
-- Loaded at runtime and placeholders replaced with actual user input and code
-- Captures execution time, success status, stdout, and stderr
-- Reports metadata via special `__EXECUTION_TIME__` and `__SUCCESS__` markers in stderr
+- The wrapper reads the path to the kata file from `sys.argv[1]` and executes it using `exec()` inside a measured context.
+- It writes two metadata markers to stderr at the end of execution: `__EXECUTION_TIME__:<ms>` and `__SUCCESS__:<True|False>`.
+- It does not embed user input into the code; user input must be provided via stdin by the caller.
 
 **Execution Flow**:
 
-1. Load wrapper template from disk
-2. Replace placeholders with repr-escaped user input and indented user code
-3. Spawn subprocess: `python -c <filled_wrapper>`
-4. Wait for completion or timeout
-5. Parse stderr to extract metadata markers
-6. Return `ExecutionResult` with success flag, stdout, stderr, and execution time
+1. Write the kata `code` to a secure temporary file.
+2. Spawn the wrapper subprocess: `python __code_wrapper.py /path/to/temp_kata.py`, passing the input via stdin.
+3. Wait for completion or timeout.
+4. Parse stderr to extract the `__EXECUTION_TIME__` and `__SUCCESS__` markers; remaining stderr is treated as user error output.
+5. Return `ExecutionResult` with success flag, stdout, stderr, and execution time.
 
 **Error Handling**:
 
-- **Timeout**: Returns `ExecutionResult` with `stderr="Execution timed out."`
-- **Wrapper Load Failure**: Returns error if template file cannot be read
-- **User Code Exception**: Captured in stderr with concise error message
-- **Subprocess Failure**: Returns generic "Execution failed" message
+- **Timeout**: Returns `ExecutionResult` with `stderr="Execution timed out."` and `success=False`.
+- **Wrapper Load Failure**: Returns error if the wrapper or temporary file cannot be read or executed.
+- **User Code Exception**: Captured in stderr by the wrapper; execution result reports `success=False`.
+- **Subprocess Failure**: Returns a generic `Execution failed` message including the exception.
 
 #### Cross-Platform Compatibility
 
-This approach works identically on Windows, Linux, macOS, Docker, and AWS Lambda environments using a simple string-based interface that invokes a fresh Python interpreter for each execution.
+This approach works identically on Windows, Linux, macOS, Docker, and AWS Lambda environments using a file-based interface and stdin for input.
 
 #### Usage Example
 
@@ -620,16 +615,11 @@ print(f"Time: {result.execution_time_ms}ms")
 
 #### Deployment Architecture
 
-In production, this service will be deployed as a **dedicated Lambda function**, separate from the API Gateway Lambda. This architecture provides:
-
-- **Network Isolation**: The execution Lambda will have no internet access or VPC connectivity, responding only to direct invocations from the API Lambda.
-- **Blast Radius Containment**: If user code causes crashes or resource exhaustion, only the execution Lambda is affected—the API remains responsive.
-- **Independent Scaling**: Execution workloads can scale independently from API traffic.
-- **Invocation Pattern**: API Lambda → Direct Lambda Invocation → Execution Lambda → Return Result
+In production, this service can be deployed as a **dedicated execution component** (for example a separate Lambda or container) to provide blast-radius containment, independent scaling and improved isolation.
 
 #### Future Enhancements
 
-- **Memory Limits**: Enforce via Lambda configuration limits and OS-level controls (`ulimit` on Linux, Windows Job Objects)
-- **Disk I/O Restrictions**: Use read-only Lambda layers or container images with restricted filesystem access
-- **Static Analysis Pre-check**: Scan for dangerous imports (`os`, `subprocess`, `socket`) before execution
-- **Execution Quotas**: Per-user rate limiting and execution time budgets
+- **Memory Limits**: Enforce via Lambda configuration limits and OS-level controls (`ulimit` on Linux, Windows Job Objects).
+- **Disk I/O Restrictions**: Use read-only Lambda layers or container images with restricted filesystem access.
+- **Static Analysis Pre-check**: Scan for dangerous imports (`os`, `subprocess`, `socket`) before execution.
+- **Execution Quotas**: Per-user rate limiting and execution time budgets.

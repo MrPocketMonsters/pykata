@@ -1,22 +1,24 @@
 """
 Wrapper to execute user-submitted code safely and measure execution time.
 
-This script is intended to be used as a template where the placeholders
-`"USER_INPUT_PLACEHOLDER"` and `"EXEC_CODE_PLACEHOLDER"` are replaced at
-runtime before execution.
+This script is intended to be used as a wrapper that loads user code and
+executes it while measuring execution time.
+
+Execute it as a subprocess, passing the path to the wrapped code file as
+the first argument and providing user input via stdin.
 """
 
 import sys
 import time
-from io import StringIO
 
 
-sys.stdin = StringIO("USER_INPUT_PLACEHOLDER")
+with open(sys.argv[1], "r", encoding="utf-8") as wrapped_file:
+    execution_code = wrapped_file.read()
 
 start_time = time.time()
 success = False
 try:
-    exec("EXEC_CODE_PLACEHOLDER")
+    exec(execution_code, {"__name__": "__main__"})
     success = True
 except Exception as exc:
     print(f"Error during execution: {exc}", file=sys.stderr)

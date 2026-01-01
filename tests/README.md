@@ -159,6 +159,18 @@ Tests for the secure code execution sandbox (`src/services/execution_service.py`
   - stderr contains "Execution timed out."
   - `execution_time_ms` reflects the timeout duration
 
+- **`test_execute_kata_with_documentation_string`**: Ensures code with docstrings executes correctly. Asserts:
+  - `success=True`
+  - stdout contains expected output
+  - stderr is empty
+  - `execution_time_ms` reflects the timeout duration
+
+- **`test_execute_kata_with_escaped_newlines_in_input`**: Validates handling of escaped newlines in user input. Asserts:
+  - Input with `\n` sequences is interpreted as actual newlines
+  - stdout matches expected multi-line output
+  - stderr is empty
+  - `execution_time_ms` reflects the timeout duration
+
 ### Dynamo Service (`unit/test_dynamo_service.py`)
 
 Tests for DynamoDB metadata service (`src/services/dynamo_service.py`) organized by method-focused classes. Uses the shared `stubbed_client` fixture for isolated AWS interactions.
