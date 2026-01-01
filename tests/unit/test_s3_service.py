@@ -40,7 +40,7 @@ class TestUploadKataCode:
             },
         )
 
-        s3_key = upload_kata_code("kata-123", "print('hello')")
+        s3_key = upload_kata_code("kata-123", "katas/kata-123.py", "print('hello')")
 
         assert s3_key == "katas/kata-123.py"
 
@@ -59,7 +59,7 @@ class TestUploadKataCode:
         )
 
         with pytest.raises(BucketNotFoundError):
-            upload_kata_code("kata-123", "print('hello')")
+            upload_kata_code("kata-123", "katas/kata-123.py", "print('hello')")
 
     def test_upload_generic_error(self, stubbed_s3_client, monkeypatch):
         """Upload raises S3ServiceError for non-bucket errors."""
@@ -76,7 +76,7 @@ class TestUploadKataCode:
         )
 
         with pytest.raises(S3ServiceError):
-            upload_kata_code("kata-123", "print('hello')")
+            upload_kata_code("kata-123", "katas/kata-123.py", "print('hello')")
 
     def test_upload_with_special_characters(self, stubbed_s3_client, monkeypatch):
         """Upload handles code with special characters and newlines."""
@@ -98,7 +98,7 @@ class TestUploadKataCode:
             },
         )
 
-        s3_key = upload_kata_code("kata-456", code)
+        s3_key = upload_kata_code("kata-456", "katas/kata-456.py", code)
 
         assert s3_key == "katas/kata-456.py"
 
@@ -203,7 +203,7 @@ class TestUploadKataCodeErrorHandling:
 
         with patch("src.services.s3_service._get_client", return_value=client):
             with pytest.raises(S3ServiceError):
-                upload_kata_code("kata-1", "code")
+                upload_kata_code("kata-1", "katas/kata-1.py", "code")
 
 
 class TestDownloadKataCodeErrorHandling:

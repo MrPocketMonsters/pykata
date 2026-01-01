@@ -1,0 +1,10 @@
+{
+    "id": "kata_001",
+    "title": "Custom Dictionary Implementation",
+    "description": "Implement a custom dictionary that supports adding, removing, and retrieving key-value pairs. Input will be a series of commands to manipulate the dictionary. ADD key - adds a key with a default value of None, prints [CREATED]; REMOVE key - removes the key from the dictionary, prints [REMOVED]; SET key value - sets the value for the specified key, prints [SET TO <value>], if no value is provided prints [ERROR - NO VALUE]; GET key - prints the current value for the specified key. If any operation besides ADD is performed on a non-existent key, print [ERROR - NOT FOUND]; if an unknown command is given, print [ERROR - UNKNOWN COMMAND], if a key is not provided print [ERROR - NO KEY]; END - ends the input processing. If ADD is called on an existing key, print [ERROR - ALREADY EXISTS].",
+    "tags": ["data structures", "dictionaries"],
+    "difficulty": "beginner",
+    "s3_key": "katas/beginner/custom_dictionary.py",
+    "sample_input": "ADD name\nSET name Alice\nADD surname\nSET surname Smith\nGET name\nGET surname\nREMOVE name\nGET name\nEND\n",
+    "sample_output": "[CREATED]\n[SET TO Alice]\n[CREATED]\n[SET TO Smith]\nAlice\nSmith\n[REMOVED]\n[ERROR - NOT FOUND]"
+}

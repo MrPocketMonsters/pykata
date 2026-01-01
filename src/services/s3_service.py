@@ -64,12 +64,13 @@ def _raise_from_client_error(error: ClientError, operation: str) -> None:
 
 
 @log_call
-def upload_kata_code(kata_id: str, code: str) -> str:
+def upload_kata_code(kata_id: str, s3_key: str, code: str) -> str:
     """Upload kata code to S3 and return the generated S3 key.
 
     Args:
         kata_id: Unique kata identifier
         code: The kata code content to upload
+        s3_key: The S3 key (path) where to store the code
 
     Returns:
         The S3 key (path) where the code was stored
@@ -78,7 +79,6 @@ def upload_kata_code(kata_id: str, code: str) -> str:
         BucketNotFoundError: If the S3 bucket does not exist
         S3ServiceError: For other S3 errors
     """
-    s3_key = f"katas/{kata_id}.py"
 
     try:
         client = _get_client()
