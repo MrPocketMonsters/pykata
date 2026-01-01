@@ -117,6 +117,11 @@ aws --endpoint-url http://localhost:4566 s3 ls
 
 After this step, your terraform instance will download the necessary providers, create the tfstate file to track the infrastructure, and apply the configuration to create the mocked AWS resources in LocalStack.
 
+- DynamoDB Table
+- S3 Bucket
+- IAM Role for Lambda
+- CloudWatch Log Group for Lambda
+
 ```bash
 terraform -chdir=terraform/environments/dev init
 terraform -chdir=terraform/environments/dev apply -auto-approve
