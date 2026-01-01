@@ -1,0 +1,10 @@
+{
+    "id": "kata_003",
+    "title": "Nth Position Concatenation",
+    "description": "Create a function that takes an array of strings and concatenates the nth character from each string to form a new string. The value of n is determined by the position of the string in the array (0-based index). If a string is shorter than n+1 characters, skip that string. Return the resulting concatenated string.",
+    "tags": ["strings", "arrays"],
+    "difficulty": "beginner",
+    "s3_key": "katas/beginner/nth_position_concat.py",
+    "sample_input": "['yoda', 'best', 'has']\n",
+    "sample_output": "yes"
+}

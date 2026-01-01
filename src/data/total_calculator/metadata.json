@@ -1,0 +1,10 @@
+{
+    "id": "kata_002",
+    "title": "Total Cost Calculator with Tax",
+    "description": "Given a dictionary of items and their costs and an array specifying the items bought, calculate the total cost of the items plus a given tax. If item doesn't exist in the given cost values, the item is ignored. Output should be rounded to two decimal places.",
+    "tags": ["dictionaries", "arrays", "math", "calculations"],
+    "difficulty": "beginner",
+    "s3_key": "katas/beginner/total_calculator.py",
+    "sample_input": "{'socks':5, 'shoes':60, 'sweater':30}\n['socks', 'shoes']\n0.09\n",
+    "sample_output": "70.85"
+}

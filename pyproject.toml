@@ -109,6 +109,7 @@ markers = [
 branch = true
 source = ["src"]
 omit = [
+    "src/data",
     "src/services/__code_wrapper.py",
     "*/tests/*",
     "*/site-packages/*",
