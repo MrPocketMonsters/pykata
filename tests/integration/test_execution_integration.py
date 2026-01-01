@@ -29,7 +29,7 @@ def test_full_kata_pipeline_integration(ensure_dynamo_available, ensure_s3_avail
     code = "x = int(input())\nprint(x * 2)"
 
     # 1) Upload code to S3
-    s3_key = upload_kata_code(kata_id, code)
+    s3_key = upload_kata_code(kata_id, f"katas/{kata_id}.py", code)
     assert s3_key == f"katas/{kata_id}.py"
 
     # 2) Create kata metadata in DynamoDB
@@ -69,7 +69,7 @@ def test_kata_execution_with_exception_integration(
     code = "n = int(input())\nif n < 0:\n    raise ValueError('Negative not allowed')\nprint(n)"
 
     # Upload and create metadata
-    s3_key = upload_kata_code(kata_id, code)
+    s3_key = upload_kata_code(kata_id, f"katas/{kata_id}.py", code)
     metadata = KataMetadata(
         id=kata_id,
         title="Positive Check",
@@ -105,8 +105,8 @@ def test_multiple_kata_executions_integration(
     code_2 = "n = int(input())\nprint(n ** 2)"
 
     # Upload and create both
-    s3_key_1 = upload_kata_code(kata_1_id, code_1)
-    s3_key_2 = upload_kata_code(kata_2_id, code_2)
+    s3_key_1 = upload_kata_code(kata_1_id, f"katas/{kata_1_id}.py", code_1)
+    s3_key_2 = upload_kata_code(kata_2_id, f"katas/{kata_2_id}.py", code_2)
 
     meta_1 = KataMetadata(
         id=kata_1_id,

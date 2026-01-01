@@ -519,7 +519,7 @@ Encapsulates S3 access for kata code storage. Uses `boto3` with endpoints source
 
 **Capabilities:**
 
-- `upload_kata_code(kata_id, code)`: Store kata code in S3 and return the generated key (`katas/{kata_id}.py`).
+- `upload_kata_code(kata_id, s3_key, code)`: Store kata code in S3 and return the given S3 key.
 - `download_kata_code(s3_key)`: Retrieve kata code from S3 by key.
 - `check_health()`: Validate connectivity to the configured S3 bucket. Returns `True` if accessible, `False` if unavailable. Handles all exceptions gracefully without raising errors, suitable for health check endpoints.
 
@@ -539,7 +539,7 @@ is_healthy = check_health()  # Returns True if S3 bucket is accessible, False ot
 
 # 2) Upload kata code (returns S3 key)
 code = "print('hello')"
-s3_key = upload_kata_code("kata-123", code)  # Returns: "katas/kata-123.py"
+s3_key = upload_kata_code("kata-123", "katas/kata-123.py", code)  # Returns: "katas/kata-123.py"
 
 # 3) Download kata code (retrieve by key)
 retrieved_code = download_kata_code(s3_key)

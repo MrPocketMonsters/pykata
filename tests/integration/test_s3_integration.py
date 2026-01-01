@@ -23,7 +23,7 @@ def test_upload_and_download_kata_code_integration(ensure_s3_available):
     code = 'name = input()\nprint(f"Hello, {name}!")'
 
     # Upload code
-    s3_key = upload_kata_code(kata_id, code)
+    s3_key = upload_kata_code(kata_id, f"katas/{kata_id}.py", code)
 
     assert s3_key == f"katas/{kata_id}.py"
 
@@ -43,8 +43,8 @@ def test_upload_multiple_katas_integration(ensure_s3_available):
     code_2 = "for i in range(10):\n    print(i)"
 
     # Upload both
-    key_1 = upload_kata_code(kata_id_1, code_1)
-    key_2 = upload_kata_code(kata_id_2, code_2)
+    key_1 = upload_kata_code(kata_id_1, f"katas/{kata_id_1}.py", code_1)
+    key_2 = upload_kata_code(kata_id_2, f"katas/{kata_id_2}.py", code_2)
 
     # Download and verify each
     downloaded_1 = download_kata_code(key_1)
