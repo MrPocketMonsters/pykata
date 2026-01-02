@@ -106,6 +106,12 @@ variable "s3_acl" {
 
 # Provider/auth configuration (dev-specific)
 
+variable "environment" {
+  description = "Deployment environment (e.g., dev, staging, prod)."
+  type        = string
+  default     = "dev"
+}
+
 variable "aws_access_key" {
   description = "AWS Access Key ID."
   type        = string
@@ -170,4 +176,16 @@ variable "aws_s3_endpoint" {
   description = "Custom S3 service endpoint (e.g., for LocalStack)."
   type        = string
   default     = "http://s3.localhost.localstack.cloud:4566"
+}
+
+variable "lambda_env_aws_endpoint" {
+  description = "AWS service endpoint used within Lambda (e.g., for LocalStack)."
+  type        = string
+  default     = "http://localstack:4566"
+}
+
+variable "lambda_env_aws_s3_endpoint" {
+  description = "S3 service endpoint used within Lambda (e.g., for LocalStack)."
+  type        = string
+  default     = "http://s3.localstack.localstack:4566"
 }

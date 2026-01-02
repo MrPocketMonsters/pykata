@@ -23,7 +23,7 @@ output "lambda_role_arn" {
   value       = module.infra.lambda_role_arn
 }
 
-output "lambda_log_group_arn" {
-  description = "ARN of the CloudWatch Log Group for Lambda"
-  value       = module.infra.lambda_log_group_arn
+output "lambda_function_arn" {
+  description = "ARN of the Lambda function"
+  value       = module.infra.lambda_function_arn
 }

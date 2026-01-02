@@ -188,13 +188,17 @@ Each environment maintains **complete isolation**:
 - **Provider authentication failed**: Check credentials are set correctly for the environment
 - **Module not installed**: Run `terraform -chdir=terraform/environments/<env> init`
 - **Resource already exists**: Either destroy and recreate, or import existing resource into state
+- **lambda.zip not found**: Ensure the Lambda package is built and located at the expected path before applying Terraform.
+- **Lambda dependency issues**: Ensure all dependencies are included in the Lambda package and compatible with AWS Lambda runtime.
+
+> **📚 See:** [Package Lambda Script](../../scripts/README.md#package-lambda-package_lambdapy) for lambda packaging instructions and warnings.
 
 **Environment-specific issues:**
 
 - **Dev/LocalStack**: See [dev/README.md - Troubleshooting](dev/README.md#troubleshooting)
 - **Prod/AWS**: Check AWS credentials, IAM permissions, and service quotas
 
-> **📚 See:** [Terraform Root README - Troubleshooting](../README.md#troubleshooting) for detailed troubleshooting guides.
+> **📚 See:** [Terraform Root README - Troubleshooting](../README.md#troubleshooting) for detailed troubleshooting guides on initial development environment setup.
 
 ## Next Steps
 

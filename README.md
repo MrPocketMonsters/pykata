@@ -123,9 +123,7 @@ For extensive instructions, see [LOCAL_SETUP.md](LOCAL_SETUP.md).
 
   ```bash
   python -m venv .venv
-  source .venv/Scripts/activate  # Git Bash/WSL
-  # or .venv\Scripts\Activate.ps1 (PowerShell)
-  # or .venv\Scripts\activate.bat (CMD)
+  source .venv/bin/activate
   ```
 
 - Install dependencies and pre-commit hooks:
@@ -144,28 +142,10 @@ For extensive instructions, see [LOCAL_SETUP.md](LOCAL_SETUP.md).
 
 - Load environment variables:
 
-  WSL/Git Bash:
-
   ```bash
   set -a
   source .env
   set +a
-  ```
-
-  CMD:
-
-  ```cmd
-  for /f "usebackq tokens=1,* delims== eol=#" %i in (".env") do @set "%i=%j"
-  ```
-
-  PowerShell:
-
-  ```powershell
-  Get-Content .env | ForEach-Object {
-    if ($_ -match '^\s*([^#\s][^=]+)=(.*)$') {
-      [Environment]::SetEnvironmentVariable($matches[1].Trim(), $matches[2].Trim())
-    }
-  }
   ```
 
 - Start LocalStack and services via Docker Compose:

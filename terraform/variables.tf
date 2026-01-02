@@ -10,14 +10,22 @@ variable "tags" {
   default     = {}
 }
 
-variable "lambda_timeout" {
-  description = "Lambda function timeout in seconds."
-  type        = number
-  default     = 10
+
+
+variable "provider_environment" {
+  description = "Deployment environment (e.g., dev, staging, prod)."
+  type        = string
 }
 
+variable "provider_aws_endpoint" {
+  description = "Endpoint where to send AWS API requests (passed from environment module)."
+  type        = string
+}
 
-
+variable "provider_aws_s3_endpoint" {
+  description = "Endpoint where to send AWS S3 API requests (passed from environment module)."
+  type        = string
+}
 variable "provider_aws_access_key" {
   description = "AWS Access Key ID passed from environment module."
   type        = string
@@ -145,12 +153,20 @@ variable "s3_acl" {
   }
 }
 
-variable "provider_aws_endpoint" {
-  description = "Endpoint where to send AWS API requests (passed from environment module)."
+
+
+variable "lambda_timeout" {
+  description = "Lambda function timeout in seconds."
+  type        = number
+  default     = 10
+}
+
+variable "lambda_env_aws_endpoint" {
+  description = "Endpoint for AWS API requests inside Lambda (passed from environment module)."
   type        = string
 }
 
-variable "provider_aws_s3_endpoint" {
-  description = "Endpoint where to send AWS S3 API requests (passed from environment module)."
+variable "lambda_env_aws_s3_endpoint" {
+  description = "Endpoint for AWS S3 API requests inside Lambda (passed from environment module)."
   type        = string
 }

@@ -33,7 +33,7 @@ output "lambda_role_arn" {
   value       = aws_iam_role.lambda_role.arn
 }
 
-output "lambda_log_group_arn" {
-  description = "CloudWatch Log Group ARN for Lambda"
-  value       = aws_cloudwatch_log_group.lambda_log_group.arn
+output "lambda_function_arn" {
+  description = "Lambda Function ARN"
+  value       = aws_lambda_function.pykata_lambda.arn
 }

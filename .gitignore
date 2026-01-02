@@ -158,3 +158,6 @@ pnpm-debug.log*
 
 # Optional: Jupyter
 .ipynb_checkpoints/
+
+# Lambda package artifacts
+*.zip

@@ -16,6 +16,7 @@ module "infra" {
   s3_acl                     = var.s3_acl
 
   # Provider configuration
+  provider_environment                 = var.environment
   provider_aws_access_key              = var.aws_access_key
   provider_aws_secret_key              = var.aws_secret_key
   provider_aws_region                  = var.aws_region
@@ -25,4 +26,6 @@ module "infra" {
   provider_skip_requesting_account_id  = var.skip_requesting_account_id
   provider_aws_s3_endpoint             = var.aws_s3_endpoint
   provider_aws_endpoint                = var.aws_endpoint
+  lambda_env_aws_endpoint              = var.lambda_env_aws_endpoint
+  lambda_env_aws_s3_endpoint           = var.lambda_env_aws_s3_endpoint
 }
