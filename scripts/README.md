@@ -20,6 +20,14 @@ Helper scripts for publishing tasks. Run them from the repository root so import
   - [What the script does](#what-the-script-does-1)
   - [Examples](#examples-1)
   - [Troubleshooting](#troubleshooting-1)
+- [Package Lambda (`package_lambda.py`)](#package-lambda-package_lambdapy)
+  - [Purpose](#purpose-2)
+  - [Prerequisites](#prerequisites-2)
+  - [Usage](#usage-2)
+  - [Arguments](#arguments-2)
+  - [What the script does](#what-the-script-does-2)
+  - [Examples](#examples-2)
+  - [Troubleshooting](#troubleshooting-2)
 
 ## Publish Kata (`publish_kata.py`)
 
@@ -143,3 +151,56 @@ python -m scripts.seed_katas --directory src/data --update
 - **ModuleNotFoundError: No module named 'src'**: Run with `python -m scripts.seed_katas ...` from the repo root so package imports resolve.
 - **Health check failures**: Ensure LocalStack/AWS endpoints are reachable and environment variables match your setup; the script exits before publishing if checks fail.
 - **Partial failures**: The final summary lists which kata directories failed; rerun for those paths after fixing their metadata/code.
+
+## Package Lambda (`package_lambda.py`)
+
+### Purpose
+
+Packages a Python AWS Lambda function by copying source files and dependencies into a build directory, then zipping it for deployment.
+
+### Prerequisites
+
+- Python virtual environment activated with project dependencies installed (see [Create and Activate a Virtualenv](../LOCAL_SETUP.md#2-create-and-activate-a-virtualenv)).
+- `pip` installed and accessible in the environment for installing dependencies.
+
+### Usage
+
+From the repository root:
+
+```bash
+python -m scripts.package_lambda [--directory PATH/TO/LAMBDA_DIR] [--output OUTPUT_ZIP] [--requirements-file REQUIREMENTS_FILE]
+```
+
+### Arguments
+
+- `--directory` (optional): Path to the Lambda function directory containing source files. Defaults to `src`.
+- `--output` (optional): Name of the output zip file (default: `lambda.zip`).
+- `--requirements-file` (optional): Path to the `requirements.txt` file for dependencies (default: `requirements.txt`).
+
+### What the script does
+
+1. Validates the provided directory exists.
+2. Creates a temporary build directory.
+3. Copies all files from the specified directory to the build directory.
+4. Installs dependencies listed in the specified `requirements.txt` into the build directory.
+5. Creates a zip file from the contents of the build directory.
+6. Cleans up the temporary build directory.
+
+### Examples
+
+Package a Lambda function in `src/lambda_function`:
+
+```bash
+python -m scripts.package_lambda --directory src/lambda_function
+```
+
+Package a Lambda function in `src/lambda_function` with a custom output zip name and requirements file:
+
+```bash
+python -m scripts.package_lambda --directory src/lambda_function --output my_lambda.zip --requirements-file src/lambda_function/requirements.txt
+```
+
+### Troubleshooting
+
+- **ModuleNotFoundError: No module named 'src'**: Run the script with `python -m scripts.package_lambda ...` from the repo root, or export the repo root to `PYTHONPATH` before running.
+- **Dependency installation failures**: Ensure the specified `requirements.txt` file exists and is correctly formatted. Check for network issues if dependencies fail to download.
