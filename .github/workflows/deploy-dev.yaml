@@ -3,8 +3,10 @@ name: Deploy and Test Dev Environment
 on:
   pull_request:
     branches: [master]
-    types:
-      - closed
+    # Commented it to test on PR before the merge
+    # Uncomment before merging to execute only PRs close
+    # types:
+    #   - closed
 
 jobs:
   deploy:
@@ -52,6 +54,10 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.7.5
+
+      - name: Package Lambda function
+        run: |
+          python -m scripts.package_lambda
 
       - name: Apply Terraform (dev) against LocalStack
         run: |
