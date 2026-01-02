@@ -65,10 +65,16 @@ def main():
         help="Directory containing Lambda function folders to be packaged.",
     )
     parser.add_argument(
+        "--build-directory",
+        type=str,
+        default="build",
+        help="Temporary build directory (default: build).",
+    )
+    parser.add_argument(
         "--output",
         type=str,
-        default="lambda.zip",
-        help="Output zip file name (default: lambda.zip).",
+        default="terraform/lambda.zip",
+        help="Output zip file name (default: terraform/lambda.zip).",
     )
     parser.add_argument(
         "--requirements-file",
@@ -87,57 +93,64 @@ def main():
 
 
     # Create a temporary build directory
-    build_path = "build"
-    print(f"Creating build directory {build_path}...")
+    print(f"Creating build directory {args.build_directory}...")
 
-    if os.path.exists(build_path):
-        print(f"Removing existing build directory {build_path}...")
-        shutil.rmtree(build_path)
+    if os.path.exists(args.build_directory):
+        print(f"Removing existing build directory {args.build_directory}...")
+        shutil.rmtree(args.build_directory)
 
-    os.makedirs(build_path, exist_ok=True)
+    os.makedirs(args.build_directory, exist_ok=True)
 
-    print(f"Build directory {build_path} is ready.")
+    print(f"Build directory {args.build_directory} is ready.")
 
 
     # Copy files to build directory, excluding specified paths (__pycache__ by default)
-    print("Copying files to build directory...")
+    print(f"Copying files to build directory {args.build_directory}...")
 
     for next_path in _walk_with_exclude(args.directory):
-        os.makedirs(os.path.dirname(f"{build_path}/{next_path}"), exist_ok=True)
-        shutil.copy2(next_path, f"{build_path}/{next_path}")
+        os.makedirs(os.path.dirname(f"{args.build_directory}/{next_path}"), exist_ok=True)
+        shutil.copy2(next_path, f"{args.build_directory}/{next_path}")
         print(f"Copied: {next_path}")
 
-    print("All files copied to build directory.")
+    print(f"All files copied to build directory {args.build_directory}.")
 
 
     # Install dependencies.
-    print("Installing dependencies...")
+    print(f"Installing dependencies in {args.build_directory}...")
     requirements_path = args.requirements_file
     if not os.path.isfile(requirements_path):
         print(f"No requirements file found at {requirements_path}. Skipping dependency installation.")
     else:
-        output = os.system(f"pip install -r {requirements_path} -t {build_path}")
+        output = os.system(f"pip install -r {requirements_path} -t {args.build_directory}")
         if output != 0:
             raise RuntimeError("Failed to install dependencies.")
+
+    print(f"Dependencies installed successfully in {args.build_directory}.")
 
 
     # Create zip file from build directory
     print(f"Creating deployment zip file {args.output}...")
 
     with zipfile.ZipFile(args.output, "w", zipfile.ZIP_DEFLATED) as zipf:
-        for root, _, files in os.walk(build_path):
+        for root, _, files in os.walk(args.build_directory):
             for file in files:
                 full_path = os.path.join(root, file)
-                relative_path = os.path.relpath(full_path, build_path)
-                zipf.write(full_path, relative_path)
+                relative_path = os.path.relpath(full_path, args.build_directory)
+                try:
+                    zipf.write(full_path, relative_path)
+                    print(f"Added to zip: {relative_path}")
+                except Exception as e:
+                    print(f"Failed to add {relative_path} to zip: {e}")
+
+    print(f"Deployment zip file {args.output} created successfully.")
 
 
     # Clean up build directory
-    print(f"Removing build directory {build_path}...")
+    print(f"Removing build directory {args.build_directory}...")
 
     for i in range(3):
         try:
-            shutil.rmtree(build_path)
+            shutil.rmtree(args.build_directory)
             print("Build directory removed successfully.")
             break
         except Exception as e:
@@ -145,7 +158,7 @@ def main():
             time.sleep(2)
 
 
-    print(f"Deployment zip file '{args.output}' created successfully.")
+    print(f"AWS Lambda packaging process completed successfully for {args.output}.")
 
 if __name__ == "__main__":
     main()

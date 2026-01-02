@@ -154,12 +154,15 @@ python -m scripts.seed_katas --directory src/data --update
 
 ## Package Lambda (`package_lambda.py`)
 
+> WARNING: This script is intended to be run on a Linux system, as AWS Lambda requires Linux-compatible binaries for dependencies. A lambda packaged on Windows or macOS may not work correctly when deployed to AWS Lambda.
+
 ### Purpose
 
 Packages a Python AWS Lambda function by copying source files and dependencies into a build directory, then zipping it for deployment.
 
 ### Prerequisites
 
+- Running on a Linux system (packaging for AWS Lambda requires Linux-compatible binaries).
 - Python virtual environment activated with project dependencies installed (see [Create and Activate a Virtualenv](../LOCAL_SETUP.md#2-create-and-activate-a-virtualenv)).
 - `pip` installed and accessible in the environment for installing dependencies.
 
@@ -168,13 +171,14 @@ Packages a Python AWS Lambda function by copying source files and dependencies i
 From the repository root:
 
 ```bash
-python -m scripts.package_lambda [--directory PATH/TO/LAMBDA_DIR] [--output OUTPUT_ZIP] [--requirements-file REQUIREMENTS_FILE]
+python -m scripts.package_lambda [--directory PATH/TO/LAMBDA_DIR] [--build-directory PATH/TO/BUILD_DIR] [--output PATH/TO/OUTPUT_ZIP] [--requirements-file PATH/TO/REQUIREMENTS_FILE]
 ```
 
 ### Arguments
 
 - `--directory` (optional): Path to the Lambda function directory containing source files. Defaults to `src`.
-- `--output` (optional): Name of the output zip file (default: `lambda.zip`).
+- `--build-directory` (optional): Temporary directory for building the package (default: `build`).
+- `--output` (optional): Name of the output zip file (default: `terraform/lambda.zip`).
 - `--requirements-file` (optional): Path to the `requirements.txt` file for dependencies (default: `requirements.txt`).
 
 ### What the script does
@@ -194,10 +198,10 @@ Package a Lambda function in `src/lambda_function`:
 python -m scripts.package_lambda --directory src/lambda_function
 ```
 
-Package a Lambda function in `src/lambda_function` with a custom output zip name and requirements file:
+Package a Lambda function in `src/lambda_function` with a custom build directory, output zip name, and requirements file:
 
 ```bash
-python -m scripts.package_lambda --directory src/lambda_function --output my_lambda.zip --requirements-file src/lambda_function/requirements.txt
+python -m scripts.package_lambda --directory src/lambda_function --build-directory build/my_lambda_build --output lambdas/my_lambda.zip --requirements-file src/lambda_function/requirements.txt
 ```
 
 ### Troubleshooting
