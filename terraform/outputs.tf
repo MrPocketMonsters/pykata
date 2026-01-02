@@ -37,3 +37,8 @@ output "lambda_function_arn" {
   description = "Lambda Function ARN"
   value       = aws_lambda_function.pykata_lambda.arn
 }
+
+output "lambda_function_name" {
+  description = "Lambda Function Name"
+  value       = aws_lambda_function.pykata_lambda.function_name
+}

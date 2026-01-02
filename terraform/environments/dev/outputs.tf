@@ -27,3 +27,8 @@ output "lambda_function_arn" {
   description = "ARN of the Lambda function"
   value       = module.infra.lambda_function_arn
 }
+
+output "lambda_function_name" {
+  description = "Name of the Lambda function"
+  value       = module.infra.lambda_function_name
+}

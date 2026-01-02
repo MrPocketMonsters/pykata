@@ -43,6 +43,7 @@ class Settings(BaseSettings):
         AWS Service Resources:
             DYNAMODB_TABLE_NAME: DynamoDB table for kata metadata storage
             S3_BUCKET_NAME: S3 bucket for user code storage
+            LAMBDA_FUNCTION_NAME: Name of the Lambda function for health checks and execution
 
         Execution Configuration:
             LAMBDA_TIMEOUT: Timeout for Lambda function execution (seconds)
@@ -65,6 +66,7 @@ class Settings(BaseSettings):
     # AWS Resource Names
     DYNAMODB_TABLE_NAME: str = "kata"
     S3_BUCKET_NAME: str = "kata-code"
+    LAMBDA_FUNCTION_NAME: str = "pykata_lambda_function"
 
     # Execution Timeouts (in seconds)
     LAMBDA_TIMEOUT: int = 10

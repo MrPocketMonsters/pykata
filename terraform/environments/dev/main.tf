@@ -5,6 +5,7 @@ module "infra" {
   project_name               = var.project_name
   tags                       = var.tags
   lambda_timeout             = var.lambda_timeout
+  lambda_function_name       = var.lambda_function_name
   dynamodb_table_name        = var.dynamodb_table_name
   billing_mode               = var.billing_mode
   attribute_definitions      = var.attribute_definitions

@@ -31,6 +31,7 @@ Comprehensive test suite for validating the functionality of service layers, API
   - [Dynamo Service End-to-End](#dynamo-service-end-to-end-test_dynamo_e2epy)
   - [S3 Service End-to-End](#s3-service-end-to-end-test_s3_e2epy)
   - [Execution Service End-to-End](#execution-service-end-to-end-test_execution_e2epy)
+  - [Lambda Function End-to-End](#lambda-function-end-to-end-test_lambda_function_e2epy)
 
 ## Directory Structure
 
@@ -512,6 +513,8 @@ A running environment with:
 **Shared Fixtures (from `conftest.py`):**
 
 - `ensure_dynamo_available`: Provides a configured DynamoDB client for end-to-end tests.
+- `ensure_s3_available`: Provides a configured S3 client for end-to-end tests.
+- `ensure_lambda_available`: Provides a configured Lambda client for end-to-end tests.
 
 ### Running end-to-end Tests
 
@@ -547,10 +550,13 @@ End-to-end tests for the code execution service combining DynamoDB metadata, S3 
 
 Tests will fail if DynamoDB, S3, or execution environment is unavailable.
 
-**Fixtures Used:**
+### Lambda Function End-to-End (`test_lambda_function_e2e.py`)
 
-- `ensure_dynamo_available`: Real DynamoDB client
-- `ensure_s3_available`: Real S3 client
+End-to-end tests for the health check Lambda function:
+
+- `test_lambda_health_invocation_e2e`: Invokes the health Lambda function directly and verifies the expected `{"status": "ok"}` response.
+
+Tests will fail if the Lambda endpoint or the required function is not available.
 
 ## Coverage Summary
 

@@ -20,6 +20,12 @@ variable "lambda_timeout" {
   default     = 10
 }
 
+variable "lambda_function_name" {
+  description = "Name of the Lambda function."
+  type        = string
+  default     = "pykata_lambda_function"
+}
+
 variable "dynamodb_table_name" {
   description = "DynamoDB table name."
   type        = string

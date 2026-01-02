@@ -161,6 +161,12 @@ variable "lambda_timeout" {
   default     = 10
 }
 
+variable "lambda_function_name" {
+  description = "Name of the Lambda function."
+  type        = string
+  default     = "pykata_lambda_function"
+}
+
 variable "lambda_env_aws_endpoint" {
   description = "Endpoint for AWS API requests inside Lambda (passed from environment module)."
   type        = string

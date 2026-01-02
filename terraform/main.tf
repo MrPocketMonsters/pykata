@@ -42,7 +42,7 @@ resource "aws_iam_role" "lambda_role" {
 }
 
 resource "aws_lambda_function" "pykata_lambda" {
-  function_name    = "pykata_lambda_function"
+  function_name    = var.lambda_function_name
   role             = aws_iam_role.lambda_role.arn
   handler          = "src.lambdas.health.handler"
   runtime          = "python3.12"

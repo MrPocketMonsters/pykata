@@ -192,6 +192,25 @@ def ensure_s3_available():
     return client
 
 
+@pytest.fixture(scope="module")
+def ensure_lambda_available():
+    """Provide a Lambda client for integration/e2e tests.
+
+    Assumes the endpoint is available (CI ensures this via job ordering).
+    Integration tests run only in dev environment with LocalStack via CI.
+    """
+    from src.config import settings
+
+    client = boto3.client(
+        "lambda",
+        endpoint_url=settings.AWS_ENDPOINT,
+        region_name=settings.AWS_DEFAULT_REGION,
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+    )
+    return client
+
+
 @pytest.fixture
 def mock_dynamo_health_up(monkeypatch):
     """Mock DynamoDB health check to return healthy (True)."""

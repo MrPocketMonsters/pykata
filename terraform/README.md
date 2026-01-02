@@ -129,6 +129,7 @@ terraform -chdir=terraform/environments/dev workspace list
 **Lambda**:
 
 - `lambda_timeout` (number): Lambda timeout in seconds (default: `10`).
+- `lambda_function_name` (string): Name of the Lambda function (default: `pykata_lambda_function`).
 - `lambda_env_aws_endpoint` (string): API endpoint for requests inside the Lambda environment (no default; provided by environment).
 - `lambda_env_aws_s3_endpoint` (string): S3 endpoint for requests inside the Lambda environment (no default; provided by environment).
 
@@ -191,6 +192,7 @@ terraform -chdir=terraform/environments/dev plan \
 - `s3_bucket_arn`: ARN of the created S3 bucket.
 - `lambda_role_arn`: IAM Role ARN for Lambda.
 - `lambda_function_arn`: ARN of the created Lambda function.
+- `lambda_function_name`: Name of the created Lambda function.
 
 ### Accessing Outputs
 

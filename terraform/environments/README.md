@@ -59,6 +59,7 @@ AWS or LocalStack
 
 - DynamoDB table: `kata` (configurable)
 - S3 bucket: `kata-code` (configurable)
+- Lambda function: `pykata_lambda_function` (configurable)
 
 ---
 
