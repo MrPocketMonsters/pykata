@@ -13,7 +13,7 @@ jobs:
       localstack:
         image: localstack/localstack:latest
         env:
-          SERVICES: dynamodb,s3,lambda,apigateway
+          SERVICES: dynamodb,s3,lambda,apigateway,iam,sqs,sns,cloudwatch,logs
           DEBUG: "1"
         ports:
           - 4566:4566

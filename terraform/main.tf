@@ -17,3 +17,33 @@ module "pykata_bucket" {
   acl                = var.s3_acl
   tags               = var.tags
 }
+
+resource "aws_cloudwatch_log_group" "lambda_log_group" {
+  name              = "/lambda/pykata_lambda_log_group"
+  retention_in_days = 14
+}
+
+data "aws_iam_policy_document" "lambda_assume_role" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+
+    actions = [
+      "sts:AssumeRole",
+      "s3:GetObject",
+      "dynamodb:PutItem",
+      "dynamodb:GetItem",
+    ]
+  }
+}
+
+resource "aws_iam_role" "lambda_role" {
+  name               = "lambda_iam_role"
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
+
+  depends_on = [aws_cloudwatch_log_group.lambda_log_group]
+}
