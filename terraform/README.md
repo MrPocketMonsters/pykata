@@ -6,7 +6,7 @@ This directory contains the Infrastructure-as-Code (IaC) for the PyKata project 
 
 ```text
 terraform/
-├── main.tf                 # Root module: DynamoDB and S3 resource composition
+├── main.tf                 # Root module: DynamoDB, S3, lambda IAM role and lambda log group resource composition
 ├── variables.tf            # Root module: input variables (infrastructure + provider inputs)
 ├── outputs.tf              # Root module: outputs from composed resources
 ├── providers.tf            # AWS provider configuration (driven by root variables)
@@ -182,6 +182,8 @@ terraform -chdir=terraform/environments/dev plan \
 - `dynamodb_table_arn`: ARN of the created DynamoDB table.
 - `s3_bucket_name`: Name of the created S3 bucket.
 - `s3_bucket_arn`: ARN of the created S3 bucket.
+- `lambda_role_arn`: IAM Role ARN for Lambda.
+- `lambda_log_group_arn`: CloudWatch Log Group ARN for Lambda.
 
 ### Accessing Outputs
 

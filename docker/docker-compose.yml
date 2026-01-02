@@ -18,7 +18,12 @@ services:
                 services.get('s3') in ('running', 'available') and
                 services.get('dynamodb') == 'available' and
                 services.get('lambda') == 'available' and
-                services.get('apigateway') == 'available'
+                services.get('apigateway') == 'available' and
+                services.get('iam') == 'available' and
+                services.get('sqs') == 'available' and
+                services.get('sns') == 'available' and
+                services.get('cloudwatch') == 'available' and
+                services.get('logs') == 'available'
             )
             sys.exit(0 if ok else 1)
         except Exception:
@@ -29,7 +34,7 @@ services:
       retries: 5
       start_period: 30s
     environment:
-      - SERVICES=${LOCALSTACK_SERVICES:-s3,dynamodb,lambda,apigateway}
+      - SERVICES=${LOCALSTACK_SERVICES:-s3,lambda,dynamodb,apigateway,iam,sqs,sns,cloudwatch,logs}
       - DEBUG=${LOCALSTACK_DEBUG:-1}
       - LAMBDA_EXECUTOR=${LOCALSTACK_LAMBDA_EXECUTOR:-docker}
       - DEFAULT_REGION=${LOCALSTACK_DEFAULT_REGION:-us-east-1}

@@ -23,5 +23,6 @@ module "infra" {
   provider_skip_credentials_validation = var.skip_credentials_validation
   provider_skip_metadata_api_check     = var.skip_metadata_api_check
   provider_skip_requesting_account_id  = var.skip_requesting_account_id
-  provider_aws_endpoints               = var.aws_endpoints
+  provider_aws_s3_endpoint             = var.aws_s3_endpoint
+  provider_aws_endpoint                = var.aws_endpoint
 }

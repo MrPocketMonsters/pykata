@@ -160,13 +160,14 @@ variable "skip_requesting_account_id" {
   default     = true
 }
 
-variable "aws_endpoints" {
-  description = "Custom service endpoints (e.g., for LocalStack)."
-  type        = map(string)
-  default = {
-    s3         = "http://s3.localhost.localstack.cloud:4566"
-    dynamodb   = "http://localhost:4566"
-    lambda     = "http://localhost:4566"
-    apigateway = "http://localhost:4566"
-  }
+variable "aws_endpoint" {
+  description = "Custom AWS service endpoint (e.g., for LocalStack)."
+  type        = string
+  default     = "http://localhost:4566"
+}
+
+variable "aws_s3_endpoint" {
+  description = "Custom S3 service endpoint (e.g., for LocalStack)."
+  type        = string
+  default     = "http://s3.localhost.localstack.cloud:4566"
 }

@@ -59,12 +59,6 @@ variable "provider_skip_requesting_account_id" {
   default     = false
 }
 
-variable "provider_aws_endpoints" {
-  description = "Custom service endpoints passed from environment module."
-  type        = map(string)
-  default     = {}
-}
-
 variable "dynamodb_table_name" {
   description = "DynamoDB table name"
   type        = string
@@ -149,4 +143,14 @@ variable "s3_acl" {
     ], var.s3_acl)
     error_message = "s3_acl must be one of the standard S3 canned ACLs."
   }
+}
+
+variable "provider_aws_endpoint" {
+  description = "Endpoint where to send AWS API requests (passed from environment module)."
+  type        = string
+}
+
+variable "provider_aws_s3_endpoint" {
+  description = "Endpoint where to send AWS S3 API requests (passed from environment module)."
+  type        = string
 }

@@ -19,9 +19,14 @@ provider "aws" {
   skip_requesting_account_id  = var.provider_skip_requesting_account_id
 
   endpoints {
-    s3         = lookup(var.provider_aws_endpoints, "s3", null)
-    dynamodb   = lookup(var.provider_aws_endpoints, "dynamodb", null)
-    lambda     = lookup(var.provider_aws_endpoints, "lambda", null)
-    apigateway = lookup(var.provider_aws_endpoints, "apigateway", null)
+    s3         = var.provider_aws_s3_endpoint
+    dynamodb   = var.provider_aws_endpoint
+    lambda     = var.provider_aws_endpoint
+    apigateway = var.provider_aws_endpoint
+    iam        = var.provider_aws_endpoint
+    sqs        = var.provider_aws_endpoint
+    sns        = var.provider_aws_endpoint
+    cloudwatch = var.provider_aws_endpoint
+    logs       = var.provider_aws_endpoint
   }
 }
