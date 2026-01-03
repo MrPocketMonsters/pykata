@@ -12,13 +12,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     services:
-      localstack:
-        image: localstack/localstack:latest
-        env:
-          SERVICES: dynamodb,s3,lambda,apigateway,iam,sqs,sns,cloudwatch,logs
-          DEBUG: "1"
-        ports:
-          - 4566:4566
+      docker:
+        image: docker:dind
+        options: --privileged
     env:
       PYTHONPATH: ${{ github.workspace }}
 
@@ -37,18 +33,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
 
-      - name: Verify LocalStack health
+      - name: Load Environment Variables
         run: |
-          for i in {1..30}; do
-            if curl -f http://localhost:4566/_localstack/health | grep -q '"dynamodb": "available"'; then
-              echo "LocalStack ready"
-              exit 0
-            fi
-            echo "Waiting for LocalStack... ($i/30)"
-            sleep 2
-          done
-          echo "LocalStack failed to become ready"
-          exit 1
+          set -a
+          source .env.example
+          set +a
+
+      - name: Start LocalStack with execution through Docker
+        run: |
+          docker compose -f docker/docker-compose.yml up -d
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
