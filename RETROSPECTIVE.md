@@ -26,7 +26,7 @@ The sprint started with a deceptive burst of speed. I closed the first three tas
 
 - **Dec 20:** First commit. The excitement begins.
 - **Dec 22:** Tasks 1.1, 1.2, 1.3 closed. Feeling like a pro.
-- **Dec 25:** Task 1.4 (Terraform). Spent Christmas binging more tutorials than I'm comfortable sharing.
+- **Dec 25:** Task 1.4 (Terraform). Spent Christmas bingeing more tutorials than I'm comfortable sharing.
 - **Dec 28:** Task 1.5 (Models & Services).
 - **Dec 31:** Tasks 1.6, 1.7, 1.8. New Year's Eve spent wrestling with FastAPI and seed data.
 - **Jan 1:** Reopened Task 1.4. Realized I needed to fix the architecture for Lambda support. Missed the original deadline, but the push was worth it.
@@ -44,7 +44,7 @@ Before writing a single line of code, I locked down the architecture and philoso
 
 ### Mocking & Scripting Fun
 
-Learning to mock responses with `Monkeypatch` and `MockMagic` was surprisingly fun. While `MockMagic` is great for complex integrations, a quick `Monkeypatch` was perfect for churning out unit tests. Implementing the helper scripts also felt like "back to basics" programminl: very rewarding to see a set of steps execute perfectly.
+Learning to mock responses with `MonkeyPatch` and `MagicMock` was surprisingly fun. While `MagicMock` is great for complex integrations, a quick `MonkeyPatch` was perfect for churning out unit tests. Implementing the helper scripts also felt like "back to basics" programming: very rewarding to see a set of steps execute perfectly.
 
 ## 🟡 The Struggles: Troubles & "Cringe" Moments
 
@@ -58,7 +58,7 @@ I created a `.coveragerc` file and suddenly my coverage percentages were blowing
 
 ### The PR History Cringe
 
-Setting up CI/CD was simpler to program than I thought, but testing it was another story. I cringe when I look at the PR request and see that count of "push commits" and spawning branches just to test the remote runner. However, attempting to clean that up actually gave me a much deeper understanding of Git pointers, branches, and the `|REBASE` state.
+Setting up CI/CD was simpler to program than I thought, but testing it was another story. I cringe when I look at the PR request and see that count of "push commits" and spawning branches just to test the remote runner. However, attempting to clean that up actually gave me a much deeper understanding of Git pointers, branches, and the `rebase` state.
 
 ### The Windows vs. Lambda Trap
 
@@ -72,7 +72,7 @@ I couldn't help myself. Task 1.9 was supposed to be just the deployment, but I h
 
 ### The Execution Service Sandbox
 
-I tried implementing a sandbox with `Restricted Python`, but it was a nightmare, even just getting the logging to work was impossible. Since virtualizing was too complex and risked delays, I settled for a simple `exec()` call in a subprocess. It’s dangerous, I know. But for the scope of this project (admin-provided code, isolated network), it works. I want to move this to a separate, network-isolated Lambda in the future.
+I tried implementing a sandbox with `RestrictedPython`, but it was a nightmare, even just getting the logging to work was impossible. Since virtualizing was too complex and risked delays, I settled for a simple `exec()` call in a subprocess. It’s dangerous, I know. But for the scope of this project (admin-provided code, isolated network), it works. I want to move this to a separate, network-isolated Lambda in the future.
 
 ### Documentation: The Necessary Evil
 
