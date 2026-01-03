@@ -112,6 +112,7 @@ Execution safety measures will be enforced: kata code will run in dedicated lamb
 ├─ .editorconfig            # Editor configuration
 ├─ .env.example             # Environment variables template
 ├─ LOCAL_SETUP.md           # Local development setup instructions
+├─ RETROSPECTIVE.md         # Sprint retrospective with personal insights
 └─ README.md
 ```
 
