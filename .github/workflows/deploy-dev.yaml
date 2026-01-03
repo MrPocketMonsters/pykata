@@ -3,10 +3,8 @@ name: Deploy and Test Dev Environment
 on:
   pull_request:
     branches: [master]
-    # Commented it to test on PR before the merge
-    # Uncomment before merging to execute only PRs close
-    # types:
-    #   - closed
+    types:
+      - closed
 
 jobs:
   deploy:
