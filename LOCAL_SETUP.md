@@ -1,10 +1,13 @@
 # ⚙️ Local Setup Guide
 
-Step-by-step instructions to get the project running locally on Windows (Git Bash/WSL or PowerShell) with LocalStack.
+Step-by-step instructions to get the project running locally on Linux (WSL or Native Linux) with LocalStack.
 
 ## 📋 Prerequisites
 
+- An actual Linux development environment (WSL2 on Windows, or native Linux).
+  > The Lambda function packaging requires installing Linux-specific dependencies through `pip`.
 - Python 3.12 installed and on PATH
+- Pip installed
 - Git installed
 - Docker Desktop running (required for LocalStack)
 - Terraform installed (v1.5+ recommended)
@@ -26,25 +29,9 @@ cd pykata
 
 After this step, you will have a Python virtual environment created and activated to isolate dependencies, ensuring they do not interfere with your global Python installation.
 
-Git Bash / WSL:
-
 ```bash
 python -m venv .venv
-source .venv/Scripts/activate
-```
-
-PowerShell:
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-```
-
-CMD:
-
-```bat
-python -m venv .venv
-.\.venv\Scripts\activate.bat
+source .venv/bin/activate
 ```
 
 ## 3) Install dependencies
@@ -69,28 +56,10 @@ After this step, you will have a `.env` file with default environment variables 
 
 - Load `.env` variables into the shell with subprocess support:
 
-    WSL/Git Bash:
-
     ```bash
     set -a
     source .env
     set +a
-    ```
-
-    CMD:
-
-    ```cmd
-    for /f "usebackq tokens=1,* delims== eol=#" %i in (".env") do @set "%i=%j"
-    ```
-
-    PowerShell:
-
-    ```powershell
-    Get-Content .env | ForEach-Object {
-        if ($_ -match '^\s*([^#\s][^=]+)=(.*)$') {
-        [Environment]::SetEnvironmentVariable($matches[1].Trim(), $matches[2].Trim())
-        }
-    }
     ```
 
 ## 5) Start LocalStack (Docker Compose)
@@ -113,7 +82,15 @@ aws --endpoint-url http://localhost:4566 dynamodb list-tables
 aws --endpoint-url http://localhost:4566 s3 ls
 ```
 
-## 7) Mock Infrastructure with Terraform
+## 7) Package Lambda function
+
+After this step, the Lambda function code will be packaged into a ZIP file in the Terraform module directory, ready for deployment.
+
+```bash
+python -m scripts.package_lambda
+```
+
+## 8) Mock Infrastructure with Terraform
 
 After this step, your terraform instance will download the necessary providers, create the tfstate file to track the infrastructure, and apply the configuration to create the mocked AWS resources in LocalStack.
 
@@ -127,7 +104,7 @@ terraform -chdir=terraform/environments/dev init
 terraform -chdir=terraform/environments/dev apply -auto-approve
 ```
 
-## 8) Run the FastAPI app locally
+## 9) Run the FastAPI app locally
 
 After this step, the FastAPI application will be running locally, allowing you to test and develop the API endpoints.
 
@@ -138,7 +115,7 @@ uvicorn src.api.main:app --reload --port 8000
 - Swagger UI: <http://localhost:8000/docs>
 - Health check: <http://localhost:8000/health>
 
-## 9) Seed sample katas
+## 10) Seed sample katas
 
 After this step, sample katas will be published to the local DynamoDB and S3 emulated by LocalStack, allowing you to test the application with pre-loaded data.
 
@@ -158,7 +135,7 @@ In both cases, if you need to update an existing kata, add the `--update` flag.
 
 > The `kata_to_publish` folder should contain `metadata.json` and `main.py` files. See [Scripts Directory Documentation](scripts/README.md) for more details.
 
-## 10) Run tests and hooks
+## 11) Run tests and hooks
 
 After this step, you will have verified that the codebase passes all pre-commit hooks and tests, ensuring code quality and correctness.
 
@@ -181,11 +158,31 @@ It this step, you will find solutions to common issues that may arise during set
 - **AWS CLI missing**: install from <https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html> or skip step 6.
 - **Tests cannot find AWS endpoints**: check `.env` has `AWS_ENDPOINT_URL=http://localhost:4566` and app reload picks it up.
 - **Kata publishing errors**: see [Scripts Directory Documentation](scripts/README.md) for troubleshooting kata publishing scripts.
+- **Lambda Errors**:
+  - If the Terraform apply step fails when creating/updating the Lambda function, ensure the `lambda.zip` file exists in the `terraform/main.tf` directory. [Create it if missing](#7-package-lambda-function).
+  - If the Lambda function does not behave as expected when invoked
+    - Ensure the lambda package was built on a Linux environment (WSL2 or native Linux) to include compatible dependencies.
+    - Ensure the handler path in `terraform/main.tf` matches the actual code structure. Update the `handler` attribute if necessary and re-apply Terraform after packaging the Lambda again.
 
 ## 🔮 Daily dev loop (cheat sheet)
 
-1. Activate venv
+1. `source .venv/Scripts/activate` (or equivalent for your shell)
 2. `docker compose -f docker/docker-compose.yml up -d`
 3. `terraform -chdir=terraform/environments/dev apply -auto-approve`
 4. `uvicorn src.api.main:app --reload --port 8000`
-5. Code → `pre-commit run --all-files` → `pytest` → push branch → open PR → let CI run
+5. Code new features/fixes
+6. If worked on katas:
+   - (If new katas created) `python -m scripts.seed_katas --directory src/data`
+   - (If existing katas modified) `python -m scripts.seed_katas --directory src/data --update`
+7. If lambda code changed:
+   - `python -m scripts.package_lambda`
+   - `terraform -chdir=terraform/environments/dev apply -auto-approve`
+8. When ready to commit:
+   - `git add (. | <specific files>)`
+   - `pre-commit`
+   - `pytest --cov=src --cov-report=term-missing`
+   - `git commit -m "<convention>: <your message>"`
+   - `git push origin <remote-branch>`
+   - Create PR and request reviews
+   - Let CI run and review results
+   - Merge when approved

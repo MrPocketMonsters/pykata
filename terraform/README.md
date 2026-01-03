@@ -6,10 +6,11 @@ This directory contains the Infrastructure-as-Code (IaC) for the PyKata project 
 
 ```text
 terraform/
-├── main.tf                 # Root module: DynamoDB, S3, lambda IAM role and lambda log group resource composition
+├── main.tf                 # Root module: DynamoDB, S3, lambda IAM role and lambda function resource composition
 ├── variables.tf            # Root module: input variables (infrastructure + provider inputs)
 ├── outputs.tf              # Root module: outputs from composed resources
 ├── providers.tf            # AWS provider configuration (driven by root variables)
+├── lambda.zip              # Packaged Lambda deployment artifact
 ├── modules/                # Reusable Terraform modules
 │   ├── dynamodb/           # DynamoDB table module
 │   └── s3/                 # S3 bucket module
@@ -109,7 +110,6 @@ terraform -chdir=terraform/environments/dev workspace list
 
 - `project_name` (string): Project name (default: `pykata`).
 - `tags` (map(string)): Common tags for all resources (default: `{}`).
-- `lambda_timeout` (number): Lambda timeout in seconds (default: `10`).
 
 **DynamoDB**:
 
@@ -126,8 +126,16 @@ terraform -chdir=terraform/environments/dev workspace list
 - `s3_force_destroy` (bool): Force destroy bucket even if not empty (default: `false`).
 - `s3_acl` (string): Canned ACL (default: `private`). Valid: `private`, `public-read`, `public-read-write`, `authenticated-read`, `log-delivery-write`, `aws-exec-read`, `bucket-owner-read`, `bucket-owner-full-control`.
 
+**Lambda**:
+
+- `lambda_timeout` (number): Lambda timeout in seconds (default: `10`).
+- `lambda_function_name` (string): Name of the Lambda function (default: `pykata_lambda_function`).
+- `lambda_env_aws_endpoint` (string): API endpoint for requests inside the Lambda environment (no default; provided by environment).
+- `lambda_env_aws_s3_endpoint` (string): S3 endpoint for requests inside the Lambda environment (no default; provided by environment).
+
 **Provider Configuration (Inputs from Environment)**:
 
+- `provider_environment` (string): Environment name (e.g., `dev`, `prod`).
 - `provider_aws_access_key` (string, sensitive): AWS access key (no default; provided by environment).
 - `provider_aws_secret_key` (string, sensitive): AWS secret key (no default; provided by environment).
 - `provider_aws_region` (string): AWS region (no default; provided by environment).
@@ -183,7 +191,8 @@ terraform -chdir=terraform/environments/dev plan \
 - `s3_bucket_name`: Name of the created S3 bucket.
 - `s3_bucket_arn`: ARN of the created S3 bucket.
 - `lambda_role_arn`: IAM Role ARN for Lambda.
-- `lambda_log_group_arn`: CloudWatch Log Group ARN for Lambda.
+- `lambda_function_arn`: ARN of the created Lambda function.
+- `lambda_function_name`: Name of the created Lambda function.
 
 ### Accessing Outputs
 
@@ -202,6 +211,10 @@ terraform -chdir=terraform/environments/dev output -json
 ### Dev Outputs (`terraform/environments/dev/outputs.tf`)
 
 Dev re-exports root outputs for convenience. When working in dev, you can reference the same output names as the root.
+
+## The Lambda Deployment Package
+
+The Lambda function deployment package (`lambda.zip`) is pre-packaged and included in the Terraform root directory. It contains the necessary code and dependencies for the Lambda function. Instructions on how to build or update this package can be found in the [Lambda Packaging Documentation](../scripts/README.md#package-lambda-package_lambdapy).
 
 ## Troubleshooting
 

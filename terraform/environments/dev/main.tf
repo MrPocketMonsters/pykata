@@ -5,6 +5,7 @@ module "infra" {
   project_name               = var.project_name
   tags                       = var.tags
   lambda_timeout             = var.lambda_timeout
+  lambda_function_name       = var.lambda_function_name
   dynamodb_table_name        = var.dynamodb_table_name
   billing_mode               = var.billing_mode
   attribute_definitions      = var.attribute_definitions
@@ -16,6 +17,7 @@ module "infra" {
   s3_acl                     = var.s3_acl
 
   # Provider configuration
+  provider_environment                 = var.environment
   provider_aws_access_key              = var.aws_access_key
   provider_aws_secret_key              = var.aws_secret_key
   provider_aws_region                  = var.aws_region
@@ -25,4 +27,6 @@ module "infra" {
   provider_skip_requesting_account_id  = var.skip_requesting_account_id
   provider_aws_s3_endpoint             = var.aws_s3_endpoint
   provider_aws_endpoint                = var.aws_endpoint
+  lambda_env_aws_endpoint              = var.lambda_env_aws_endpoint
+  lambda_env_aws_s3_endpoint           = var.lambda_env_aws_s3_endpoint
 }

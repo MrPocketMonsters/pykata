@@ -160,8 +160,8 @@ class TestLogCall:
         assert my_func.__doc__ == "Function docstring."
 
 
-class TestLoggerIntegration:
-    """Integration tests for logger utilities."""
+class TestLoggerUtilities:
+    """Behavior tests for logger utilities."""
 
     def test_logger_methods_work(self, caplog):
         """Test that logger methods work correctly."""
