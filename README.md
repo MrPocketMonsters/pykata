@@ -310,3 +310,7 @@ Key implementation points and measurable artifacts produced by the project.
 
 - **Sprint 1 Deliverable:** Deployed backend to a dev environment with health and kata listing/execution available. ✔️
 - **Sprint 2 Deliverable:** Frontend available via S3/CloudFront and full CI/CD in place for backend and frontend.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
